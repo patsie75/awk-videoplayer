@@ -1,0 +1,5 @@
+#!/usr/bin/sh
+
+clear
+ffmpeg -i "$1" -vf scale=192:108 -vcodec rawvideo -f rawvideo -pix_fmt rgb565 - 2>/dev/null | LC_ALL=C gawk -f ./awk-play.gawk
+
