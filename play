@@ -1,5 +1,7 @@
 #!/usr/bin/sh
 
 clear
-ffmpeg -i "$1" -vf scale=192:108 -vcodec rawvideo -f rawvideo -pix_fmt rgb565 - 2>/dev/null | LC_ALL=C gawk -f ./awk-play.gawk
+#ffmpeg -i "$1" -vf scale=192:108 -vcodec rawvideo -f rawvideo -pix_fmt rgb565 - 2>/dev/null | LC_ALL=C gawk -f ./awk-play.gawk
+ffmpeg -i "$1" -f alsa default -vf scale=w=192:h=108 -vcodec rawvideo -f rawvideo -pix_fmt rgb565 - | LC_ALL=C gawk -f ./awk-play.gawk
+#ffmpeg -i "$1" -vf scale=width=192:height=108:sws_flags=bicublin -vcodec rawvideo -f rawvideo -pix_fmt rgb565 - | LC_ALL=C gawk -f ./awk-play.gawk
 
