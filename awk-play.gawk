@@ -36,39 +36,48 @@ BEGIN {
 
   init(myscr, width, height)
 
-  vid["width"] = 192
-  vid["height"] = 108
+  vid["width"] = vwidth ? vwidth : 192
+  vid["height"] = vheight ? vheight : 108
+
+printf("vwidth: %s (%s)\nvheight %s (%s)\n", vwidth, vid["width"], vheight, vid["height"])
+
+  #vid["width"] = 192
+  #vid["height"] = 108
   vid["framesize"] = vid["height"] * vid["width"]
 
   # set RS to twice the width of the video
-  RS = ".{384}"
+  # each pixel contains 16 bits (rgb565), so each line width*2 bytes
+  # this RS "hack" will make it possible to stream the data line by line
+  RS = ".{" vid["width"] * 2"}"
 
   # turn cursor off
   cursor("off")
 }
 
-## skip every odd frame
+## skip lines for every odd frame
 (vid["frame"] % 2) {
   ## still handle scanlines/hsync
   hsync(vid)
 
-  ## but do nothing with this frame
+  ## but do nothing with this frame/line
   next
 }
 
 
 {
+  # with our RS "hack", RT contains our line data
   len = split(RT, data, "")
   linepos = vid["scanline"] * vid["width"]
 
-  i = 2
+  # left most pixel (2 bytes) seems to contain weird data(?!), so skip those
+  byte = 2
 
   for (x=0; x<vid["width"]; x++) {
     # get 16 bit rgb565 from data (2 bytes)
-    rgb = ORD[data[i]] * 256 + ORD[data[i+1]]
-    i += 2
+    rgb = ORD[data[byte]] * 256 + ORD[data[byte+1]]
+    byte += 2
 
-    # convert to 3x8=24 bit RGB
+    # convert to 24 bit RGB value
     vid[linepos+x] = rgb565to24bits(rgb)
   }
 
