@@ -93,9 +93,8 @@ BEGIN {
 
   linepos = vid["scanline"] * vid["width"]
 
-  # left most pixel ("bytes_per_pixel" bytes) seems to contain weird data(?!), so skip those
-  #byte = 0
-  byte = vid["bytes_per_pix"]
+  # start at first byte of the line
+  byte = 1
 
   ## rgb8
   if (vid["pix_fmt"] == "rgb8") {
@@ -110,7 +109,7 @@ BEGIN {
   ## rgb565
   if (vid["pix_fmt"] == "rgb565") {
     for (x=0; x<vid["width"]; x++) {
-      rgb = ORD[data[byte]] * 256 + ORD[data[byte+1]]
+      rgb = ORD[data[byte+1]] * 256 + ORD[data[byte]]
       #vid[linepos+x] = sprintf("#%02X%02X%02X", int(and(rshift(rgb,11), 0x1F) / 0x1F * 0xFF), int(and(rshift(rgb,5), 0x3F) / 0x3F * 0xFF), int(and(rgb, 0x1F) / 0x1F * 0xFF) )
       vid[linepos+x] = sprintf("#%02X%02X%02X", int(and(rgb,0xF800) / 0xF800 * 0xFF), int(and(rgb,0x07E0) / 0x07E0 * 0xFF), int(and(rgb, 0x1F) / 0x1F * 0xFF) )
       byte += vid["bytes_per_pix"]
@@ -120,9 +119,7 @@ BEGIN {
   ## rgb24
   if (vid["pix_fmt"] == "rgb24") {
     for (x=0; x<vid["width"]; x++) {
-      ## RGB24 is actuall GRB ?!
-      #vid[linepos+x] = sprintf("#%02X%02X%02X", ORD[data[byte+2]], ORD[data[byte+1]], ORD[data[byte]])
-      vid[linepos+x] = sprintf("#%02X%02X%02X", ORD[data[byte+1]], ORD[data[byte+2]], ORD[data[byte]])
+      vid[linepos+x] = sprintf("#%02X%02X%02X", ORD[data[byte]], ORD[data[byte+1]], ORD[data[byte+2]])
       byte += vid["bytes_per_pix"]
     }
   }

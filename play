@@ -6,6 +6,10 @@ clear
 #w="$(tput cols)"
 #h="$(( $(tput lines) * 2 ))"
 
+## set fixed width x height
+#w=$(( 16 * 11 ))
+#h=$((  9 * 11 ))
+
 ## options "rgb8" (8-bit) "rgb565" (26 bit) "rgb24" (24 bit)
 pix_fmt="${2:-rgb24}"
 
