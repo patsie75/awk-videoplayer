@@ -2,24 +2,6 @@
 
 @include "glib.gawk"
 
-## convert 16 bit rgb565 to 24 bit RGB
-function rgb565to24bits(rgb,      r,g,b) {
-  b = int(and(rgb, 0x1F) / 0x1F * 0xFF)
-  g = int(and(rshift(rgb,5), 0x3F) / 0x3F * 0xFF)
-  r = int(and(rshift(rgb,11), 0x1F) / 0x1F * 0xFF)
-
-  return(sprintf("#%02X%02X%02X", r,g,b))
-}
-
-## convert 24 bit rgb24 to 3x8 bit RGB
-function rgb24to24bits(rgb,      r,g,b) {
-  b = and(rgb, 0xFF)
-  g = and(rshift(rgb,8), 0xFF)
-  r = and(rshift(rgb,16), 0xFF)
-
-  return(sprintf("#%02X%02X%02X", r,g,b))
-}
-
 ## horizontal sync, call on each (scan)line update
 function hsync(vid) {
   vid["scanline"]++
@@ -34,6 +16,7 @@ function hsync(vid) {
     vid["framecnt"]++
     vid["now"] = timex()
 
+    # update fps every 0.5 seconds
     if ( (vid["now"] - vid["then"]) > 0.5 ) {
       vid["curfps"] = vid["framecnt"] / (vid["now"] - vid["then"])
       vid["avgfps"] = vid["frame"] / (vid["now"] - vid["start"])
@@ -48,8 +31,13 @@ function hsync(vid) {
 }
 
 BEGIN {
+  pixfmt["rgb565"] = 16
+  pixfmt["rgb8"]   = 8
+  pixfmt["rgb24"]  = 24
+
   # initialize ORD byte-array
-  for (i=0; i<256; i++) ORD[sprintf("%c",i)] = i;
+  for (i=0; i<256; i++)
+    ORD[sprintf("%c",i)] = i;
 
   # get terminal width and height
   width = terminal["width"]
@@ -57,27 +45,24 @@ BEGIN {
 
   init(myscr, width, height)
 
-  vid["width"] = vwidth ? vwidth : 192
-  vid["height"] = vheight ? vheight : 108
-
-  #vid["width"] = 192
-  #vid["height"] = 108
+  vid["width"]     = vwidth ? vwidth : 192
+  vid["height"]    = vheight ? vheight : 108
   vid["framesize"] = vid["height"] * vid["width"]
+  vid["pix_fmt"]   = pix_fmt ? pix_fmt : "rgb24"
 
-  vid["pix_fmt"] = pix_fmt ? pix_fmt : "rgb565"
-
-  if (vid["pix_fmt"] == "rgb565")
-    vid["bpp"] = 16
-
-  if (vid["pix_fmt"] == "rgb24")
-    vid["bpp"] = 24
+  if (vid["pix_fmt"] in pixfmt)
+    vid["bpp"] = pixfmt[vid["pix_fmt"]]
+  else {
+    printf("Unknown pixel format: \"%s\"\n", vid["pix_fmt"])
+    exit 1
+  }
 
   vid["bytes_per_pix"] = int(vid["bpp"] / 8)
 
   vid["start"] = vid["then"] = vid["now"] = timex()
 
-  # set RS to twice the width of the video
-  # each pixel contains 16 bits (rgb565), so each line width*2 bytes
+  # set RS to "bytes_per_pixel" times the width of the video
+  # each pixel contains "bpp" bits of data, so each line "width" x "bytes_per_pixel"
   # this RS "hack" will make it possible to stream the data line by line
   RS = ".{" vid["width"] * vid["bytes_per_pix"] "}"
 
@@ -101,17 +86,25 @@ BEGIN {
   len = split(RT, data, "")
   linepos = vid["scanline"] * vid["width"]
 
-  # left most pixel ("depth" bytes) seems to contain weird data(?!), so skip those
-  byte = vid["bytes_per_pix"]
+  # left most pixel ("bytes_per_pixel" bytes) seems to contain weird data(?!), so skip those
   #byte = 0
+  byte = vid["bytes_per_pix"]
+
+  ## rgb8
+  if (vid["pix_fmt"] == "rgb8") {
+    for (x=0; x<vid["width"]; x++) {
+      rgb = ORD[data[byte]]
+      vid[linepos+x] = sprintf("#%02X%02X%02X", int(and(rshift(rgb,5), 0x07) / 0x07 * 0xFF), int(and(rshift(rgb,2), 0x07) / 0x07 * 0xFF), int(and(rgb, 0x03) / 0x03 * 0xFF) )
+      byte += vid["bytes_per_pix"]
+    }
+  }
 
   ## rgb565
   if (vid["pix_fmt"] == "rgb565") {
     for (x=0; x<vid["width"]; x++) {
-      #vid[linepos+x] = rgb565to24bits( ORD[data[byte]] * 256 + ORD[data[byte+1]] )
-
       rgb = ORD[data[byte]] * 256 + ORD[data[byte+1]]
       vid[linepos+x] = sprintf("#%02X%02X%02X", int(and(rshift(rgb,11), 0x1F) / 0x1F * 0xFF), int(and(rshift(rgb,5), 0x3F) / 0x3F * 0xFF), int(and(rgb, 0x1F) / 0x1F * 0xFF) )
+      #vid[linepos+x] = sprintf("#%02X%02X%02X", int(and(rgb,0xF800) / 0xF800 * 0xFF), int(and(rgb,0x07E0) / 0x07E0 * 0xFF), int(and(rgb, 0x1F) / 0x1F * 0xFF) )
       byte += vid["bytes_per_pix"]
     }
   }
