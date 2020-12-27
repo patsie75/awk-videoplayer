@@ -20,4 +20,4 @@ On my hardware 24fps results in about 50% playback speed. Displaying only the ev
 
 This script is currently in a realy testing phase. don't expect too much from it
 
-Example video can be seen here: https://youtu.be/Iu5dw3R2X_s
+Example video can be seen here: https://youtu.be/QVQkG5bBcOo
