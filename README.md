@@ -21,3 +21,8 @@ On my hardware 24fps results in about 50% playback speed. Displaying only the ev
 This script is currently in a testing phase. don't expect too much from it
 
 Example video can be seen here: https://youtu.be/QVQkG5bBcOo
+
+Example screenshots in 8, 16 and 24 bits:<br>
+![8 bits](/screenshots/rgb8.png)<br>
+![16 bits](/screenshots/rgb565.png)<br>
+![24 bits](/screenshots/rgb24.png)<br>
