@@ -3,15 +3,15 @@
 clear
 
 ## set width and height
-#w="$(tput cols)"
-#h="$(( $(tput lines) * 2 ))"
+w="$(tput cols)"
+h="$(( $(tput lines) * 2 ))"
 
 ## set fixed width x height
 #w=$(( 16 * 10 ))
 #h=$((  9 * 10 ))
-
-w=$(( 21 * 10 ))
-h=$((  9 * 10 ))
+#
+w=$(( 21 * 12 ))
+h=$((  9 * 12 ))
 
 ## options "rgb8" (8-bit) "rgb565" (26 bit) "rgb24" (24 bit)
 pix_fmt="${2:-rgb24}"
@@ -23,4 +23,5 @@ ffopts=( -f alsa default -vf "scale=w=${w:-160}:h=${h:-90}" -vcodec rawvideo -f 
 awkopts=( -b -v vwidth="${w:-160}" -v vheight="${h:-90}" -v pix_fmt="${pix_fmt:-rgb24}" )
 
 ## start ffmpeg conversion and start displaying video
+#ffmpeg -i "$1" "${ffopts[@]}" - 2>/dev/null | strace ./awk-play.gawk "${awkopts[@]}" 2>strace.out
 ffmpeg -i "$1" "${ffopts[@]}" - 2>/dev/null | ./awk-play.gawk "${awkopts[@]}"
