@@ -1,0 +1,23 @@
+BEGIN {
+  for (i=0; i<256; i++)
+    ORD[sprintf("%c",i)] = i;
+
+  RS = ".{" width "}"
+}
+
+{
+  byte = 1
+  line = ""
+  split(RT, data, "")
+
+  for (x=0; x<width; x++)
+  {
+    rgb = ORD[data[byte]]
+    line = line " " sprintf("#%02X%02X%02X", int(and(rgb,0xE0) / 0xE0 * 0xFF), int(and(rgb,0x1C) / 0x1C * 0xFF), int(and(rgb, 0x03) / 0x03 * 0xFF) )
+    byte++
+  }
+
+  # output processed data back for main thread
+  printf("%s\n", substr(line,2))
+  fflush()
+}

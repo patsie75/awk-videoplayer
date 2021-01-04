@@ -1,0 +1,22 @@
+BEGIN {
+  for (i=0; i<256; i++)
+    ORD[sprintf("%c",i)] = i;
+
+  RS = ".{" width * 3 "}"
+}
+
+{
+  byte = 1
+  line = ""
+  split(RT, data, "")
+
+  for (x=0; x<width; x++)
+  {
+    line = line " " sprintf("#%02X%02X%02X", ORD[data[byte]], ORD[data[byte+1]], ORD[data[byte+2]])
+    byte += 3
+  }
+
+  # output processed data back for main thread
+  printf("%s\n", substr(line,2))
+  fflush()
+}
