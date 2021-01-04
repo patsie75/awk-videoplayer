@@ -34,8 +34,10 @@ BEGIN {
   line = ""
 
   ## rgb8
-  if (vid["pix_fmt"] == "rgb8") {
-    for (x=0; x<vid["width"]; x++) {
+  if (vid["pix_fmt"] == "rgb8")
+  {
+    for (x=0; x<vid["width"]; x++)
+    {
       rgb = ORD[data[byte]]
       line = line " " sprintf("#%02X%02X%02X", int(and(rgb,0xE0) / 0xE0 * 0xFF), int(and(rgb,0x1C) / 0x1C * 0xFF), int(and(rgb, 0x03) / 0x03 * 0xFF) )
       byte += vid["bytes_per_pix"]
@@ -43,8 +45,10 @@ BEGIN {
   }
 
   ## rgb565
-  if (vid["pix_fmt"] == "rgb565") {
-    for (x=0; x<vid["width"]; x++) {
+  if (vid["pix_fmt"] == "rgb565")
+  {
+    for (x=0; x<vid["width"]; x++)
+    {
       rgb = ORD[data[byte]] + ORD[data[byte+1]] * 256
       line = line " " sprintf("#%02X%02X%02X", int(and(rgb,0xF800) / 0xF800 * 0xFF), int(and(rgb,0x07E0) / 0x07E0 * 0xFF), int(and(rgb, 0x1F) / 0x1F * 0xFF) )
       byte += vid["bytes_per_pix"]
@@ -52,8 +56,10 @@ BEGIN {
   }
 
   ## rgb24
-  if (vid["pix_fmt"] == "rgb24") {
-    for (x=0; x<vid["width"]; x++) {
+  if (vid["pix_fmt"] == "rgb24")
+  {
+    for (x=0; x<vid["width"]; x++)
+    {
       line = line " " sprintf("#%02X%02X%02X", ORD[data[byte]], ORD[data[byte+1]], ORD[data[byte+2]])
       byte += vid["bytes_per_pix"]
     }

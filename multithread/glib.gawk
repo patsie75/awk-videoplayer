@@ -166,34 +166,23 @@ function draw(scr, xpos, ypos, cls,   screen, line, x,y, w,h, fg,bg, fgprev,bgpr
     line = sprintf("\033[%0d;%0dH", ypos+(y/2), xpos)
 
     for (x=0; x<w; x++) {
-      if (substr(scr[y_mul_w+x],1,1) == "#")
+      if (substr(scr[y_mul_w+x],1,1) == "#") {
         #fg = "38;2;" int("0x"substr(scr[y_mul_w+x],2,2)) ";" int("0x"substr(scr[y_mul_w+x],4,2)) ";" int("0x"substr(scr[y_mul_w+x],6,2))
-        fg = "38;2;" strtonum("0x"substr(scr[y_mul_w+x],2,2)) ";" strtonum("0x"substr(scr[y_mul_w+x],4,2)) ";" strtonum("0x"substr(scr[y_mul_w+x],6,2))
-      else
+        #fg = "38;2;" strtonum("0x"substr(scr[y_mul_w+x],2,2)) ";" strtonum("0x"substr(scr[y_mul_w+x],4,2)) ";" strtonum("0x"substr(scr[y_mul_w+x],6,2))
+        val = strtonum("0x"substr(scr[y_mul_w+x],2))
+        fg = "38;2;" rshift(and(val,0xFF0000),16) ";" rshift(and(val,0x00FF00),8) ";" and(val,0xFF)
+      } else
         fg = (scr[y_mul_w+x] > 7) ? scr[y_mul_w+x] + 82 : scr[y_mul_w+x] + 30
 
       # for odd-height pictures, add black (bg) pixel at bottom
-      if (substr(scr[y1_mul_w+x],1,1) == "#")
+      if (substr(scr[y1_mul_w+x],1,1) == "#") {
         #bg = (y%2) ? 40 : "48;2;" int("0x"substr(scr[y1_mul_w+x],2,2)) ";" int("0x"substr(scr[y1_mul_w+x],4,2)) ";" int("0x"substr(scr[y1_mul_w+x],6,2))
-        bg = (y%2) ? 40 : "48;2;" strtonum("0x"substr(scr[y1_mul_w+x],2,2)) ";" strtonum("0x"substr(scr[y1_mul_w+x],4,2)) ";" strtonum("0x"substr(scr[y1_mul_w+x],6,2))
-      else
+        #bg = (y%2) ? 40 : "48;2;" strtonum("0x"substr(scr[y1_mul_w+x],2,2)) ";" strtonum("0x"substr(scr[y1_mul_w+x],4,2)) ";" strtonum("0x"substr(scr[y1_mul_w+x],6,2))
+        #bg = "48;2;" strtonum("0x"substr(scr[y1_mul_w+x],2,2)) ";" strtonum("0x"substr(scr[y1_mul_w+x],4,2)) ";" strtonum("0x"substr(scr[y1_mul_w+x],6,2))
+        val = strtonum("0x"substr(scr[y1_mul_w+x],2))
+        bg = "48;2;" rshift(and(val,0xFF0000),16) ";" rshift(and(val,0x00FF00),8) ";" and(val,0xFF)
+      } else
         bg = (y%2) ? 40 : (scr[y1_mul_w+x] > 7) ? scr[y1_mul_w+x] + 92 : scr[y1_mul_w+x] + 40
-
-#      if (fg != fgprev) {
-#        line = line "\033[" fg
-#        fgprev = fg
-#        if (bg != bgprev) {
-#          line = line ";" bg 
-#          bgprev = bg
-#        }
-#        line = line "m"
-#      } else {
-#        if (bg != bgprev) {
-#          line = line "\033[" bg "m"
-#          bgprev = bg
-#        }
-#      }
-#      line = line "▀"
 
       # set forground/background colors and draw pixel(s)
       if ((fg != fgprev) || (bg != bgprev)) {
@@ -243,24 +232,6 @@ function copy(dst, src, dstx, dsty, srcx, srcy, srcw, srch, transp,   dx,dy, dw,
   else if ("transparent" in src) t = src["transparent"]
   else if ("transparent" in glib) t = glib["transparent"]
 
-#  for (y=sy; y<(sy+h); y++) {
-#    # clip image off top/bottom
-#    if ((dy + y) >= dh) break
-#    if ((dy + y) < 0) continue
-#    sw_mul_y = sw * y
-#    ydy_mul_dw = (y - sy + dy) * dw
-#    for (x=sx; x<(sx+w); x++) {
-#      xdx = x - sx + dx
-#
-#      # clip image on left/right
-#      if (xdx >= dw) break
-#      if (xdx < 0) continue
-#
-#      # draw non-transparent pixel or else background
-#      pix = src[sw_mul_y + x]
-#      dst[ydy_mul_dw + xdx] = ((pix == t) || (pix == "None")) ? dst[ydy_mul_dw + xdx] : pix
-#    }
-#  }
   for (y=sy; y<(sy+h); y++) {
     # clip image off top/bottom
     if ((dy + y) >= dh) break
@@ -277,10 +248,6 @@ function copy(dst, src, dstx, dsty, srcx, srcy, srcw, srch, transp,   dx,dy, dw,
       # draw non-transparent pixel or else background
       pix = src[sw_mul_y + x]
       dst[ydy_mul_dw + xdx] = ((pix == t) || (pix == "None")) ? dst[ydy_mul_dw + xdx] : pix
-      #if ((pix == t) || (pix == "None"))
-      #  dst[ydy_mul_dw + xdx] = dst[ydy_mul_dw + xdx]
-      #else
-      #  dst[ydy_mul_dw + xdx] = pix
     }
   }
 }

@@ -5,32 +5,32 @@
 @include "glib.gawk"
 
 ## horizontal sync, call for each (scan)line update
-function hsync(vid) {
+function hsync(vid)
+{
   vid["scanline"]++
 
   ## if current scanline is the height of the video
-  if (vid["scanline"] == vid["height"]) {
-    ## reset the scanline and increase the frame number
+  if (vid["scanline"] == vid["height"])
+  {
+    # reset the scanline and increase the frame number
     vid["scanline"] = 0
     vid["frame"]++
 
     # increase framecount and update timer
     vid["framecnt"]++
     vid["now"] = timex()
-
     vid["time"] = sprintf("%02dh%02dm%04.1fs", (vid["now"]-vid["start"])/3600, ((vid["now"]-vid["start"])/60)%60, (vid["now"]-vid["start"])%60 )
 
     # update fps every 0.5 seconds
-    if ( (vid["now"] - vid["then"]) > 0.5 ) {
+    if ( (vid["now"] - vid["then"]) >= 0.5 )
+    {
       vid["curfps"] = vid["framecnt"] / (vid["now"] - vid["then"])
       vid["avgfps"] = vid["frame"] / (vid["now"] - vid["start"])
-
       vid["framecnt"] = 0
       vid["then"] = vid["now"]
     }
     return 1
   }
-
   return 0
 }
 
@@ -47,9 +47,10 @@ BEGIN {
   bpp["rgb24"]         = 24
 
   # set video details
-  vid["width"]         = vwidth ? vwidth : 192
-  vid["height"]        = vheight ? vheight : 108
+  vid["width"]         = width   ? width   : 192
+  vid["height"]        = height  ? height  : 108
   vid["pix_fmt"]       = pix_fmt ? pix_fmt : "rgb24"
+  vid["threads"]       = threads ? threads : 2
 
   # set bits and bytes per pixel for configured pixel format
   if (! (vid["pix_fmt"] in bpp)) {
@@ -58,6 +59,7 @@ BEGIN {
     printf("\n\n")
     exit 1
   }
+
   vid["bpp"]           = bpp[vid["pix_fmt"]]
   vid["bytes_per_pix"] = int(vid["bpp"] / 8)
   vid["start"]         = vid["then"] = vid["now"] = timex()
@@ -68,13 +70,12 @@ BEGIN {
   RS = ".{" vid["width"] * vid["bytes_per_pix"] "}"
 
   # create sub-processes to offload decoding data
-  vid["threads"] = 6
-  for (i=0; i<vid["threads"]; i++)
+  for (i=0; i<vid["threads"]; i++) {
     thread[i] = sprintf("./codec.gawk -b -v thread=%d -v width=%d -v pix_fmt=\"%s\"", i, vid["width"], vid["pix_fmt"])
+  }
 
   # turn cursor off
   cursor("off")
-
 }
 
 
@@ -90,30 +91,31 @@ BEGIN {
 
 {
   # thread number to pass data to
-  threadnr = ((NR-1) % vid["threads"])
+  threadnr = ((NR-1) % vid["height"] % vid["threads"])
 
   # send data to thread
   printf("%s", RT) |& thread[threadnr]
 
   # if this is the last line (hsync) then draw the frame
-  if (hsync(vid)) {
-
+  if (hsync(vid))
+  {
     # threads need data and time to process. delay reading with one frame
-    if (vid["frame"] > 1) {
+    if (vid["frame"] > 1)
+    {
       # thread data returns newline separated
       RS = "\n"
 
       # read data from all threads
-      for (threadnr=0; threadnr<vid["threads"]; threadnr++) {
-
+      for (threadnr=0; threadnr<vid["threads"]; threadnr++)
+      {
         # read all lines of data from thread
-        for (linenr=threadnr; linenr<vid["height"]; linenr+=vid["threads"]) {
+        for (linenr=threadnr; linenr<vid["height"]; linenr+=vid["threads"])
+        {
           linepos = linenr * vid["width"]
 
           # read and split data and put it in vid[] array
           thread[threadnr] |& getline line
-          n = split(line, data)
-
+          split(line, data)
           for (x=0; x<vid["width"]; x++)
             vid[linepos+x] = data[x+1]
         }
