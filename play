@@ -6,18 +6,27 @@ clear
 #w="$(tput cols)"
 #h="$(( $(tput lines) * 2 ))"
 
-## set fixed width x height
-#w=$(( 16 * 11 ))
-#h=$((  9 * 11 ))
+## set fixed size
+size=8
 
-## options "rgb8" (8-bit) "rgb565" (26 bit) "rgb24" (24 bit)
+## tv aspect ratio 16:9
+#w=$(( 16 * size ))
+#h=$((  9 * size ))
+## movie aspect ratio 21:9
+w=$(( 21 * size ))
+h=$((  9 * size ))
+
+## options "rgb8" (8-bit) "rgb565" (16 bit) "rgb24" (24 bit)
 pix_fmt="${2:-rgb24}"
+
+## number of decoding threads (default 2)
+threads="${3:-2}"
 
 ## ffmpeg options
 ffopts=( -f alsa default -vf "scale=w=${w:-160}:h=${h:-90}" -vcodec rawvideo -f rawvideo -pix_fmt "$pix_fmt" )
 
 ## awk options, needs `-b` or `LC_ALL=C` to parse byte-characters and not multi-byte characters
-awkopts=( -b -v vwidth="${w:-160}" -v vheight="${h:-90}" -v pix_fmt="${pix_fmt:-rgb24}" )
+awkopts=( -b -v width="${w:-160}" -v height="${h:-90}" -v pix_fmt="${pix_fmt:-rgb24}" -v threads=${threads:-2} )
 
 ## start ffmpeg conversion and start displaying video
-ffmpeg -i "$1" "${ffopts[@]}" - 2>/dev/null | ./awk-play.gawk "${awkopts[@]}"
+ffmpeg -i "$1" "${ffopts[@]}" - 2>/dev/null | gawk "${awkopts[@]}" -f awk-videoplayer.gawk

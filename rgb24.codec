@@ -1,0 +1,22 @@
+#!/usr/bin/gawk -f
+
+BEGIN {
+  for (i=0; i<256; i++)
+    ORD[sprintf("%c",i)] = i;
+  RS = ".{" width * 3 "}"
+}
+
+{
+  byte = 1
+  line = ""
+  split(RT, data, "")
+
+  for (x=0; x<width; x++)
+  {
+    line = line sprintf("%d;%d;%d ", ORD[data[byte]], ORD[data[byte+1]], ORD[data[byte+2]])
+    byte += 3
+  }
+
+  printf("%s\n", line)
+  fflush()
+}
