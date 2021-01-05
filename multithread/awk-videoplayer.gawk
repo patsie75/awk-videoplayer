@@ -1,8 +1,7 @@
 #!/usr/bin/gawk -f
 
-## use awk-glib for displaying data
+## modified draw function used from awk-glib for displaying data
 ## awk-glib source: https://github.com/patsie75/awk-glib
-#@include "glib.gawk"
 @include "draw.gawk"
 
 ## horizontal sync, call for each (scan)line update
@@ -53,10 +52,9 @@ BEGIN {
   vid["pix_fmt"]       = pix_fmt ? pix_fmt : "rgb24"
   vid["threads"]       = threads ? threads : 2
 
-  clear(vid, "0;0;0")
-
   # set bits and bytes per pixel for configured pixel format
-  if (! (vid["pix_fmt"] in bpp)) {
+  if (! (vid["pix_fmt"] in bpp))
+  {
     printf("ERR: Unknown pixel format: \"%s\"\nUse one of:", vid["pix_fmt"])
     for (fmt in bpp) printf(" \"%s\"", fmt)
     printf("\n\n")
@@ -66,6 +64,8 @@ BEGIN {
   vid["bpp"]           = bpp[vid["pix_fmt"]]
   vid["bytes_per_pix"] = int(vid["bpp"] / 8)
   vid["start"]         = vid["then"] = vid["now"] = timex()
+
+  clear(vid, "0;0;0")
 
   # set RS to "bytes_per_pixel" times the width of the video
   # each pixel contains "bpp" bits of data, so each line "width" x "bytes_per_pixel"
@@ -85,15 +85,67 @@ BEGIN {
 
 ## skip lines for every odd frame
 (vid["frame"] % 2) {
-  # still handle scanlines/hsync
+  # still handle scanlines/hsync, but ignore data
   hsync(vid)
-
-  # but do nothing with this frame/line
   next
 }
 
 
-{
+## single threaded
+(vid["threads"] == 1) {
+
+  # with our RS "hack", RT contains our line data
+  len = split(RT, data, "")
+
+  if (len != (vid["width"] * vid["bytes_per_pix"]) )
+  {
+    printf("ERR: Premature end of data\nNeeded %d bytes, got %d\n", vid["width"] * vid["bytes_per_pix"], len)
+    exit 1
+  }
+
+  linepos = vid["scanline"] * vid["width"]
+
+  # start at first byte of the line
+  byte = 1
+
+  ## rgb8
+  if (vid["pix_fmt"] == "rgb8") {
+    for (x=0; x<vid["width"]; x++) {
+      rgb = ORD[data[byte]]
+      vid[linepos+x] = sprintf("%d;%d;%d", int(and(rgb,0xE0) / 0xE0 * 0xFF), int(and(rgb,0x1C) / 0x1C * 0xFF), int(and(rgb, 0x03) / 0x03 * 0xFF) )
+      byte += vid["bytes_per_pix"]
+    }
+  }
+
+  ## rgb565
+  if (vid["pix_fmt"] == "rgb565") {
+    for (x=0; x<vid["width"]; x++) {
+      rgb = ORD[data[byte+1]] * 256 + ORD[data[byte]]
+      vid[linepos+x] = sprintf("%d;%d;%d", int(and(rgb,0xF800) / 0xF800 * 0xFF), int(and(rgb,0x07E0) / 0x07E0 * 0xFF), int(and(rgb, 0x1F) / 0x1F * 0xFF) )
+      byte += vid["bytes_per_pix"]
+    }
+  }
+
+  ## rgb24
+  if (vid["pix_fmt"] == "rgb24") {
+    for (x=0; x<vid["width"]; x++) {
+      vid[linepos+x] = sprintf("%d;%d;%d", ORD[data[byte]], ORD[data[byte+1]], ORD[data[byte+2]])
+      byte += vid["bytes_per_pix"]
+    }
+  }
+
+  ## if this is the last line (hsync) then draw the frame
+  if (hsync(vid)) {
+    draw(vid)
+    printf("\033[Hsize (%dx%d) %s, %s, frame: %6s, fps: %4.1f cur/%4.1f avg", vid["width"], vid["height"], vid["pix_fmt"], vid["time"], vid["frame"], vid["curfps"], vid["avgfps"])
+  }
+
+  next
+}
+
+
+## multi-threaded
+(vid["threads"] > 1) {
   # thread number to pass data to
   threadnr = ((NR-1) % vid["height"] % vid["threads"])
 
@@ -134,8 +186,8 @@ BEGIN {
     printf("\033[Hsize (%dx%d) %s, %s, frame: %6s, fps: %4.1f cur/%4.1f avg", vid["width"], vid["height"], vid["pix_fmt"], vid["time"], vid["frame"], vid["curfps"], vid["avgfps"])
   }
 
+  next
 }
-
 
 END {
   # reenable cursor

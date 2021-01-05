@@ -58,7 +58,7 @@ function draw(scr, xpos, ypos, cls,   screen, line, x,y, w,h, fg,bg, fgprev,bgpr
   w = scr["width"]
   h = scr["height"]
 
-  fgprev = bgprev = 0
+  fgprev = bgprev = -1
 
   # position of zero means center
   if (xpos == 0) xpos = int((terminal["width"] - w) / 2)+1
