@@ -2,7 +2,8 @@
 
 ## use awk-glib for displaying data
 ## awk-glib source: https://github.com/patsie75/awk-glib
-@include "glib.gawk"
+#@include "glib.gawk"
+@include "draw.gawk"
 
 ## horizontal sync, call for each (scan)line update
 function hsync(vid)
@@ -52,6 +53,8 @@ BEGIN {
   vid["pix_fmt"]       = pix_fmt ? pix_fmt : "rgb24"
   vid["threads"]       = threads ? threads : 2
 
+  clear(vid, "0;0;0")
+
   # set bits and bytes per pixel for configured pixel format
   if (! (vid["pix_fmt"] in bpp)) {
     printf("ERR: Unknown pixel format: \"%s\"\nUse one of:", vid["pix_fmt"])
@@ -71,8 +74,8 @@ BEGIN {
 
   # create sub-processes to offload decoding data
   for (i=0; i<vid["threads"]; i++) {
-    thread[i] = sprintf("gawk -b -v thread=%d -v width=%d -v pix_fmt=\"%s\" -f codec.gawk", i, vid["width"], vid["pix_fmt"])
-    #thread[i] = sprintf("gawk -b -v thread=%d -v width=%d -f %s.codec", i, vid["width"], vid["pix_fmt"])
+    #thread[i] = sprintf("gawk -b -v thread=%d -v width=%d -v pix_fmt=\"%s\" -f codec.gawk", i, vid["width"], vid["pix_fmt"])
+    thread[i] = sprintf("gawk -b -v thread=%d -v width=%d -f %s.codec", i, vid["width"], vid["pix_fmt"])
   }
 
   # turn cursor off
