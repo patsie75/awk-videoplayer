@@ -14,8 +14,7 @@ BEGIN {
   for (x=0; x<width; x++)
   {
     rgb = ORD[data[byte]] + ORD[data[byte+1]] * 256
-    #line = line sprintf("#%02X%02X%02X ", int(and(rgb,0xF800) / 0xF800 * 0xFF), int(and(rgb,0x07E0) / 0x07E0 * 0xFF), int(and(rgb, 0x1F) / 0x1F * 0xFF) )
-    line = line sprintf("%d;%d;%d ", int(and(rgb,0xF800) / 0xF800 * 0xFF), int(and(rgb,0x07E0) / 0x07E0 * 0xFF), int(and(rgb, 0x1F) / 0x1F * 0xFF) )
+    line = line sprintf("%d;%d;%d ", and(rgb,0xF800) / 0xF800 * 0xFF, and(rgb,0x07E0) / 0x07E0 * 0xFF, and(rgb, 0x1F) / 0x1F * 0xFF )
     byte += 2
   }
 
