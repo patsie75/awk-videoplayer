@@ -29,4 +29,4 @@ ffopts=( -f alsa default -vf "scale=w=${w:-160}:h=${h:-90}" -vcodec rawvideo -f 
 awkopts=( -b -v width="${w:-160}" -v height="${h:-90}" -v pix_fmt="${pix_fmt:-rgb24}" -v threads=${threads:-2} )
 
 ## start ffmpeg conversion and start displaying video
-ffmpeg -i "$1" "${ffopts[@]}" - 2>/dev/null | gawk "${awkopts[@]}" -f awk-videoplayer.gawk
+ffmpeg -i "$1" "${ffopts[@]}" - 2>/dev/null | gawk "${awkopts[@]}" -f src/awk-videoplayer.gawk

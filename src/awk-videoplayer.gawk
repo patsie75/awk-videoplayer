@@ -2,7 +2,7 @@
 
 ## modified draw function used from awk-glib for displaying data
 ## awk-glib source: https://github.com/patsie75/awk-glib
-@include "draw.gawk"
+@include "src/draw.gawk"
 
 ## horizontal sync, call for each (scan)line update
 function hsync(vid)
@@ -50,7 +50,7 @@ BEGIN {
   vid["width"]         = width   ? width   : 192
   vid["height"]        = height  ? height  : 108
   vid["pix_fmt"]       = pix_fmt ? pix_fmt : "rgb24"
-  vid["threads"]       = threads ? threads : 2
+  vid["threads"]       = length(threads) ? threads : 2
 
   # set bits and bytes per pixel for configured pixel format
   if (! (vid["pix_fmt"] in bpp))
@@ -73,10 +73,8 @@ BEGIN {
   RS = ".{" vid["width"] * vid["bytes_per_pix"] "}"
 
   # create sub-processes to offload decoding data
-  for (i=0; i<vid["threads"]; i++) {
-    #thread[i] = sprintf("gawk -b -v thread=%d -v width=%d -v pix_fmt=\"%s\" -f codec.gawk", i, vid["width"], vid["pix_fmt"])
-    thread[i] = sprintf("gawk -b -v thread=%d -v width=%d -f %s.codec", i, vid["width"], vid["pix_fmt"])
-  }
+  for (i=0; i<vid["threads"]; i++)
+    thread[i] = sprintf("gawk -b -v thread=%d -v width=%d -f src/%s.codec", i, vid["width"], vid["pix_fmt"])
 
   # turn cursor off
   cursor("off")
@@ -92,7 +90,7 @@ BEGIN {
 
 
 ## single threaded
-(vid["threads"] == 1) {
+(vid["threads"] == 0) {
 
   # with our RS "hack", RT contains our line data
   len = split(RT, data, "")
@@ -139,13 +137,11 @@ BEGIN {
     draw(vid)
     printf("\033[Hsize (%dx%d) %s, %s, frame: %6s, fps: %4.1f cur/%4.1f avg", vid["width"], vid["height"], vid["pix_fmt"], vid["time"], vid["frame"], vid["curfps"], vid["avgfps"])
   }
-
-  next
 }
 
 
 ## multi-threaded
-(vid["threads"] > 1) {
+(vid["threads"] > 0) {
   # thread number to pass data to
   threadnr = ((NR-1) % vid["height"] % vid["threads"])
 
@@ -185,8 +181,6 @@ BEGIN {
     draw(vid)
     printf("\033[Hsize (%dx%d) %s, %s, frame: %6s, fps: %4.1f cur/%4.1f avg", vid["width"], vid["height"], vid["pix_fmt"], vid["time"], vid["frame"], vid["curfps"], vid["avgfps"])
   }
-
-  next
 }
 
 END {
