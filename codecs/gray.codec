@@ -1,0 +1,22 @@
+#!/usr/bin/gawk -f
+@include "src/ord.gawk"
+
+BEGIN {
+  RS = ".{" width * 1 "}"
+}
+
+{
+  byte = 1
+  line = ""
+  split(RT, data, "")
+
+  for (x=0; x<width; x++)
+  {
+    gray = ORD[data[byte]]
+    line = line sprintf("%d;%d;%d ", gray, gray, gray)
+    byte++
+  }
+
+  printf("%s\n", line)
+  fflush()
+}

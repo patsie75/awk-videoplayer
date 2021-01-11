@@ -1,19 +1,5 @@
-
-function min(a, b) { return (a < b) ? a : b }
-function max(a, b) { return (a > b) ? a : b }
-function clip(a, b, c) { return min(max(a,b), c) }
-
-function yuv2rgb(y, u, v,   c, d, e, r, g, b) {
-  c = y - 16
-  d = u - 128
-  e = v - 128
-
-  r = clip( (1.164383 * c)                  + (1.596027 * e) , 0, 255 )
-  g = clip( (1.164383 * c) - (0.391762 * d) - (0.812968 * e), 0, 255 )
-  b = clip( (1.164383 * c) + (2.017232 * d)                 , 0, 255 )
-
-  return sprintf("%d;%d;%d", r, g, b)
-}
+#!/usr/bin/gawk -f
+@include "src/yuv.gawk"
 
 function decode(vid, data,    byte, linepos, x, rgb)
 {
@@ -62,6 +48,32 @@ function decode(vid, data,    byte, linepos, x, rgb)
       vid[linepos+x+1] = yuv2rgb(y2, u, v)
 
       byte += 4
+    }
+  }
+
+  if (vid["pix_fmt"] == "uyvy422")
+  {
+    for (x=0; x<width; x+=2)
+    {
+      u  = ORD[data[byte]]
+      y1 = ORD[data[byte+1]]
+      v  = ORD[data[byte+2]]
+      y2 = ORD[data[byte+3]]
+    
+      vid[linepos+x]   = yuv2rgb(y1, u, v)
+      vid[linepos+x+1] = yuv2rgb(y2, u, v)
+
+      byte += 4
+    }
+  }
+
+  if (vid["pix_fmt"] == "gray")
+  {
+    for (x=0; x<width; x++)
+    {
+      gray = ORD[data[byte]]
+      vid[linepos+x] = sprintf("%d;%d;%d", gray, gray, gray)
+      byte++
     }
   }
 

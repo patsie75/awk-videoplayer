@@ -47,6 +47,8 @@ BEGIN {
   bpp["rgb565"]        = 16
   bpp["rgb24"]         = 24
   bpp["yuyv422"]       = 16
+  bpp["uyvy422"]       = 16
+  bpp["gray"]          = 8
 
   # set video details
   vid["width"]         = width   ? width   : 192
@@ -76,7 +78,7 @@ BEGIN {
 
   # create sub-processes to offload decoding data
   for (i=0; i<vid["threads"]; i++)
-    thread[i] = sprintf("gawk -b -v thread=%d -v width=%d -f src/%s.codec", i, vid["width"], vid["pix_fmt"])
+    thread[i] = sprintf("gawk -b -v thread=%d -v width=%d -f codecs/%s.codec", i, vid["width"], vid["pix_fmt"])
 
   # turn cursor off
   cursor("off")
