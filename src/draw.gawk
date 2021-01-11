@@ -35,8 +35,7 @@ function init(dst, w,h, x,y, dx,dy) {
 
 # turn cursor on or off
 function cursor(state) {
-  if (state in negative) printf("\033[?25l")
-  else if (state in positive) printf("\033[?25h")
+  printf("\033[?25%c", (state in negative) ? "l" : "h")
 }
 
 # clear the terminal
@@ -71,7 +70,7 @@ function draw(scr, xpos, ypos, cls,   screen, line, x,y, w,h, fg,bg, fgprev,bgpr
   screen = cls ? "\033[2J" : ""
   for (y=0; y<h; y+=2) {
     y0_mul_w = y*w
-    y1_mul_w = (y+1)*w
+    y1_mul_w = y0_mul_w + w
 
     # set cursor position
     line = sprintf("\033[%0d;%0dH", ypos+(y/2), xpos)
@@ -93,6 +92,7 @@ function draw(scr, xpos, ypos, cls,   screen, line, x,y, w,h, fg,bg, fgprev,bgpr
     }
     screen = screen line
   }
+
   # draw screen to terminal and reset color
   printf("%s\033[0m", screen)
 }
