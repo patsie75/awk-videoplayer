@@ -17,7 +17,7 @@ BEGIN {
     u  = ORD[data[byte+1]]
     y2 = ORD[data[byte+2]]
     v  = ORD[data[byte+3]]
-    
+
     line = line " " yuv2rgb(y1, u, v) " " yuv2rgb(y2, u, v)
 
     byte += 4

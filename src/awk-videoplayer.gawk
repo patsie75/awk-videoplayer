@@ -38,17 +38,14 @@ function hsync(vid)
 
 ## initialize video player
 BEGIN {
-  # initialize ORD byte-array
-  for (i=0; i<256; i++)
-    ORD[sprintf("%c",i)] = i;
-
   # define bits per pixel for pixel formats
+  bpp["gray"]          = 8
   bpp["rgb8"]          = 8
   bpp["rgb565"]        = 16
   bpp["rgb24"]         = 24
-  bpp["yuyv422"]       = 16
   bpp["uyvy422"]       = 16
-  bpp["gray"]          = 8
+  bpp["yuyv422"]       = 16
+  bpp["yvyu422"]       = 16
 
   # set video details
   vid["width"]         = width   ? width   : 192
