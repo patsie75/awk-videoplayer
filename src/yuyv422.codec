@@ -4,10 +4,6 @@ BEGIN {
   for (i=0; i<256; i++)
     ORD[sprintf("%c",i)] = i;
   RS = ".{" width * 2 "}"
-
-  fname = sprintf("/tmp/yuyv422-t%d.txt", thread)
-  printf("start thread %s\n", thread) >>"/tmp/yuyv422.txt"
-  fflush()
 }
 
 function min(a, b) { return (a < b) ? a : b }
@@ -27,8 +23,6 @@ function yuv2rgb(y, u, v,    c, d, e, r, g, b) {
 }
 
 {
-  printf("#%s line %d\n", thread, NR) >>"/tmp/yuyv422.txt"
-
   byte = 1
   line = ""
   split(RT, data, "")
@@ -46,6 +40,5 @@ function yuv2rgb(y, u, v,    c, d, e, r, g, b) {
   }
 
   printf("%s\n", line)
-  printf("%s\n", line) >>fname
   fflush()
 }
