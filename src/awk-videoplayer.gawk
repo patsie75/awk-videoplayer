@@ -3,69 +3,40 @@
 ## modified draw function used from awk-glib for displaying data
 ## awk-glib source: https://github.com/patsie75/awk-glib
 @include "src/draw.gawk"
-@include "src/decode.gawk"
-
-## horizontal sync, call for each (scan)line update
-function hsync(vid)
-{
-  vid["scanline"]++
-
-  ## if current scanline is the height of the video
-  if (vid["scanline"] == vid["height"])
-  {
-    # reset the scanline and increase the frame number
-    vid["scanline"] = 0
-    vid["frame"]++
-
-    # increase framecount and update timer
-    vid["framecnt"]++
-    vid["now"] = timex()
-    vid["time"] = sprintf("%02dh%02dm%04.1fs", (vid["now"]-vid["start"])/3600, ((vid["now"]-vid["start"])/60)%60, (vid["now"]-vid["start"])%60 )
-
-    # update fps every 0.5 seconds
-    if ( (vid["now"] - vid["then"]) >= 0.5 )
-    {
-      vid["curfps"] = vid["framecnt"] / (vid["now"] - vid["then"])
-      vid["avgfps"] = vid["frame"] / (vid["now"] - vid["start"])
-      vid["framecnt"] = 0
-      vid["then"] = vid["now"]
-    }
-    return 1
-  }
-  return 0
-}
-
+@include "src/hsync.gawk"
+@include "src/decfnc.gawk"
+@include "src/config.gawk"
 
 ## initialize video player
 BEGIN {
-  # define bits per pixel for pixel formats
-  bpp["gray"]          = 8
-  bpp["rgb8"]          = 8
-  bpp["rgb565"]        = 16
-  bpp["rgb24"]         = 24
-  bpp["uyvy422"]       = 16
-  bpp["yuyv422"]       = 16
-  bpp["yvyu422"]       = 16
+  # load configuration
+  load_cfg(cfg, "awk-videoplayer.cfg")
 
-  # set video details
-  vid["width"]         = width   ? width   : 192
-  vid["height"]        = height  ? height  : 108
+  # set video pixelformat
   vid["pix_fmt"]       = pix_fmt ? pix_fmt : "rgb24"
-  vid["threads"]       = length(threads) ? threads : 2
 
-  # set bits and bytes per pixel for configured pixel format
-  if (! (vid["pix_fmt"] in bpp))
+  # check if pixelformat has a known configuration
+  if ( !(vid["pix_fmt"] in cfg) )
   {
     printf("ERR: Unknown pixel format: \"%s\"\nUse one of:", vid["pix_fmt"])
-    for (fmt in bpp) printf(" \"%s\"", fmt)
+    for (fmt in cfg) printf(" \"%s\"", fmt)
     printf("\n\n")
     exit 1
   }
 
-  vid["bpp"]           = bpp[vid["pix_fmt"]]
-  vid["bytes_per_pix"] = int(vid["bpp"] / 8)
-  vid["start"]         = vid["then"] = vid["now"] = timex()
+  # set rest of video parameters
+  vid["width"]           = width           ? width   : 192
+  vid["height"]          = height          ? height  : 108
+  vid["threads"]         = length(threads) ? threads : 2
+  vid["bpp"]             = cfg[vid["pix_fmt"]]["bpp"]
+  vid["bytes_per_pix"]   = int(vid["bpp"] / 8)
+  vid["macro_pix"]       = cfg[vid["pix_fmt"]]["macro_pix"] ? cfg[vid["pix_fmt"]]["macro_pix"] : 1
+  vid["codec"]           = cfg[vid["pix_fmt"]]["codec"]     ? cfg[vid["pix_fmt"]]["codec"]     : "generic"
+  vid["decfnc"] = decfnc = cfg[vid["pix_fmt"]]["decfnc"]    ? cfg[vid["pix_fmt"]]["decfnc"]    : "dec_" vid["pix_fmt"]
+  vid["byte_inc"]        = vid["bytes_per_pix"] * vid["macro_pix"]
+  vid["start"]           = vid["then"] = vid["now"] = timex()
 
+  # clear video screen
   clear(vid, "0;0;0")
 
   # set RS to "bytes_per_pixel" times the width of the video
@@ -75,7 +46,7 @@ BEGIN {
 
   # create sub-processes to offload decoding data
   for (i=0; i<vid["threads"]; i++)
-    thread[i] = sprintf("gawk -b -v thread=%d -v width=%d -f codecs/%s.codec", i, vid["width"], vid["pix_fmt"])
+    thread[i] = sprintf("gawk -b -v thread=%d -v width=%d -v pix_fmt=\"%s\" -v bytes_per_pix=%d -v macro_pix=%d -v decfnc=\"%s\" -f codecs/%s.codec", i, vid["width"], vid["pix_fmt"], vid["bytes_per_pix"], vid["macro_pix"], vid["decfnc"], vid["codec"])
 
   # turn cursor off
   cursor("off")
@@ -102,14 +73,23 @@ BEGIN {
     exit 1
   }
 
-  # decode the line of video data
-  decode(vid, data)
+  byte = 1
+  linepos = vid["scanline"] * vid["width"]
+
+  # decode video data
+  for (x=0; x<width; x+=vid["macro_pix"])
+  {
+    n = split(@decfnc(data, byte), pixels)
+    for (i=0; i<n; i++)
+      vid[linepos+x+i] = pixels[i+1]
+    byte += vid["byte_inc"]
+  }
 
   ## if this is the last line (hsync) then draw the frame
   if (hsync(vid))
   {
     draw(vid)
-    printf("\033[Hsize (%dx%d) %s, %s, frame: %6s, fps: %4.1f cur/%4.1f avg", vid["width"], vid["height"], vid["pix_fmt"], vid["time"], vid["frame"], vid["curfps"], vid["avgfps"])
+    printf("\033[Hsize (%dx%d) %s/%s, %s, frame: %6s, fps: %4.1f cur/%4.1f avg", vid["width"], vid["height"], vid["pix_fmt"], decfnc, vid["time"], vid["frame"], vid["curfps"], vid["avgfps"])
   }
 }
 
@@ -153,7 +133,7 @@ BEGIN {
 
     # display frame and stats
     draw(vid)
-    printf("\033[Hsize (%dx%d) %s, %s, frame: %6s, fps: %4.1f cur/%4.1f avg", vid["width"], vid["height"], vid["pix_fmt"], vid["time"], vid["frame"], vid["curfps"], vid["avgfps"])
+    printf("\033[Hsize (%dx%d) %s/%s/%s, %s, frame: %6s, fps: %4.1f cur/%4.1f avg", vid["width"], vid["height"], vid["pix_fmt"], vid["codec"], decfnc, vid["time"], vid["frame"], vid["curfps"], vid["avgfps"])
   }
 }
 
