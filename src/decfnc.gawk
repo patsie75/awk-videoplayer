@@ -13,7 +13,7 @@ function dec_rgb8(data, byte,   rgb) {
 
 function dec_bgr8(data, byte,   rgb) {  
   rgb = ORD[data[byte]]
-  return sprintf("%d;%d;%d", and(rgb,0x03) / 0x03 * 0xFF, and(rgb,0x1C) / 0x1C * 0xFF, and(rgb,0xE0) / 0xE0 * 0xFF) 
+  return sprintf("%d;%d;%d", and(rgb,0x07) / 0x07 * 0xFF, and(rgb,0x38) / 0x38 * 0xFF, and(rgb,0xC0) / 0xC0 * 0xFF) 
 }
 
 function dec_rgb565(data, byte,   rgb) {  
