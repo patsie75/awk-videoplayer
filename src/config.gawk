@@ -13,6 +13,13 @@ function load_cfg(cfg, file,    label, n, keyval)
       gsub(/^ *"?|"? *$/, "", keyval[1])
       gsub(/^ *"?|"? *$/, "", keyval[2])
 
+#      if (tolower(keyval[1]) == "offset") {
+#        n = split(keyval[2], arr, ",")
+#        for (i=0; i<n; i++)
+#          cfg[label]["offset"][arr[i+1]] = i
+#        continue
+#      } 
+
       cfg[label][tolower(keyval[1])] = keyval[2]
       n++
     }

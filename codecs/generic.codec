@@ -5,19 +5,28 @@ BEGIN {
   RS = ".{" width * bytes_per_pix "}"
 
   byte_inc = bytes_per_pix * macro_pix
+
+  # get color offsets/order within data
+  n = split(offset, arr, ",")
+  for (i=0; i<n; i++)
+    offs[arr[i+1]] = i
 }
 
 {
+  # receive and split data
+  split(RT, data, "")
+
   byte = 1
   line = ""
-  split(RT, data, "")
-  
+
+  # call pixelformat decoding function
   for (x=0; x<width; x+=macro_pix)
   {
-    line = line @decfnc(data, byte) " "
+    line = line @decfnc(data, byte, offs) " "
     byte += byte_inc
   }
 
+  # return result to main thread
   printf("%s\n", line)
   fflush()
 }

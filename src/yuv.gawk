@@ -1,6 +1,4 @@
-function min(a, b)     { return (a < b) ? a : b }
-function max(a, b)     { return (a > b) ? a : b }
-function clip(a, b, c) { return min(max(a,b), c) }
+function clip(a, b, c) { return (a <= b) ? b : (a >= c) ? c : a }
 
 function yuv2rgb(y, u, v,    c, d, e, r, g, b) {
   c = (y - 16) * 1.164383

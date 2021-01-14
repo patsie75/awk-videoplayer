@@ -32,12 +32,17 @@ BEGIN {
   vid["bytes_per_pix"]   = int(vid["bpp"] / 8)
   vid["macro_pix"]       = cfg[vid["pix_fmt"]]["macro_pix"] ? cfg[vid["pix_fmt"]]["macro_pix"] : 1
   vid["codec"]           = cfg[vid["pix_fmt"]]["codec"]     ? cfg[vid["pix_fmt"]]["codec"]     : "generic"
-  vid["decfnc"] = decfnc = cfg[vid["pix_fmt"]]["decfnc"]    ? cfg[vid["pix_fmt"]]["decfnc"]    : "dec_" vid["pix_fmt"]
+  vid["decfnc"] = decfnc = cfg[vid["pix_fmt"]]["decfnc"]    ? "dec_" cfg[vid["pix_fmt"]]["decfnc"] : "dec_" vid["pix_fmt"]
+  vid["offset"]          = cfg[vid["pix_fmt"]]["offset"]    ? cfg[vid["pix_fmt"]]["offset"] : ""
   vid["byte_inc"]        = vid["bytes_per_pix"] * vid["macro_pix"]
-  vid["start"]           = vid["then"] = vid["now"] = timex()
 
   # clear video screen
   clear(vid, "0;0;0")
+
+  # split offset into array
+  n = split(vid["offset"], arr, ",")
+  for (i=0; i<n; i++)
+    offs[arr[i+1]] = i
 
   # set RS to "bytes_per_pixel" times the width of the video
   # each pixel contains "bpp" bits of data, so each line "width" x "bytes_per_pixel"
@@ -46,10 +51,13 @@ BEGIN {
 
   # create sub-processes to offload decoding data
   for (i=0; i<vid["threads"]; i++)
-    thread[i] = sprintf("gawk -b -v thread=%d -v width=%d -v pix_fmt=\"%s\" -v bytes_per_pix=%d -v macro_pix=%d -v decfnc=\"%s\" -f codecs/%s.codec", i, vid["width"], vid["pix_fmt"], vid["bytes_per_pix"], vid["macro_pix"], vid["decfnc"], vid["codec"])
+    thread[i] = sprintf("gawk -b -v thread=%d -v width=%d  -v bytes_per_pix=%d -v macro_pix=%d -v decfnc=\"%s\" -v offset=\"%s\" -f codecs/%s.codec", i, vid["width"], vid["bytes_per_pix"], vid["macro_pix"], vid["decfnc"], vid["offset"], vid["codec"])
 
   # turn cursor off
   cursor("off")
+
+  # start measuring duration
+  vid["start"] = vid["then"] = vid["now"] = timex()
 }
 
 
@@ -79,7 +87,7 @@ BEGIN {
   # decode video data
   for (x=0; x<width; x+=vid["macro_pix"])
   {
-    n = split(@decfnc(data, byte), pixels)
+    n = split(@decfnc(data, byte, offs), pixels)
     for (i=0; i<n; i++)
       vid[linepos+x+i] = pixels[i+1]
     byte += vid["byte_inc"]
