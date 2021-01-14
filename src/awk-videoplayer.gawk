@@ -51,7 +51,7 @@ BEGIN {
 
   # create sub-processes to offload decoding data
   for (i=0; i<vid["threads"]; i++)
-    thread[i] = sprintf("gawk -b -v thread=%d -v width=%d  -v bytes_per_pix=%d -v macro_pix=%d -v decfnc=\"%s\" -v offset=\"%s\" -f codecs/%s.codec", i, vid["width"], vid["bytes_per_pix"], vid["macro_pix"], vid["decfnc"], vid["offset"], vid["codec"])
+    thread[i] = sprintf("gawk -b -v thread=%d -v width=%d -v bytes_per_pix=%d -v macro_pix=%d -v decfnc=\"%s\" -v offset=\"%s\" -f codecs/%s.codec", i, vid["width"], vid["bytes_per_pix"], vid["macro_pix"], vid["decfnc"], vid["offset"], vid["codec"])
 
   # turn cursor off
   cursor("off")
