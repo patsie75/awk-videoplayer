@@ -16,8 +16,44 @@ function fill(dst, col,   i, size) {
     dst[i] = col
 }
 
+## draw progress bar
+function bar(val, max, barsize,    str, len, full, part, i) {
+  str = ""
+  len = length(bargraph) - 1
+
+  full = int(val*barsize/max)
+  part = (val*barsize/max) % 1
+
+  while (i < full)    { str = str sprintf("%s", bargraph[8]); i++ }
+  if (part >= 1/len)  { str = str sprintf("%s", bargraph[int(part*len)]); i++ }
+  while (i < barsize) { str = str sprintf("%s", bargraph[0]); i++ }
+  #printf(" [%s %s %s]\n", full, part, barsize)
+
+  return str
+}
+
 ## initialize video player
 BEGIN {
+  # progress bar graphics
+  #bargraph[0] = 32
+  #bargraph[1] = 9615
+  #bargraph[2] = 9614
+  #bargraph[3] = 9613
+  #bargraph[4] = 9612
+  #bargraph[5] = 9611
+  #bargraph[6] = 9610
+  #bargraph[7] = 9609
+  #bargraph[8] = 9608
+  bargraph[0] = " "
+  bargraph[1] = "▏"
+  bargraph[2] = "▎"
+  bargraph[3] = "▍"
+  bargraph[4] = "▌"
+  bargraph[5] = "▋"
+  bargraph[6] = "▊"
+  bargraph[7] = "▉"
+  bargraph[8] = "█"
+
   # load configuration
   load_cfg(cfg, "awk-videoplayer.cfg")
 
@@ -119,8 +155,9 @@ BEGIN {
       skip--
       skipped++
     } else draw(vid)
-    if ( !(vid["frame"] % 10) )
-      printf("\033[Hsize (%dx%d) %s/%s, %s, frame: %6s, fps: %4.1f cur/%4.1f avg skipped: %d", vid["width"], vid["height"], vid["pix_fmt"], decfnc, vid["time"], vid["frame"], vid["curfps"], vid["avgfps"], skipped)
+
+    if ( !(vid["frame"] % 13) )
+      printf("\033[Hsize (%dx%d) %s, %s/%s \033[97;44m%s\033[0m %5.1f%%, frame: %6s (dropped: %d), fps: %4.1f cur/%4.1f avg", vid["width"], vid["height"], vid["pix_fmt"], vid["time"], vid["duration"], bar(vid["frame"], 6572, 10), vid["frame"]*100/6572, vid["frame"], skipped, vid["curfps"], vid["avgfps"])
   }
 }
 
@@ -163,21 +200,20 @@ BEGIN {
     }
 
     # display frame and stats
-#    draw(vid)
-#    printf("\033[Hsize (%dx%d) %s/%s/%s, %s, frame: %6s, fps: %4.1f cur/%4.1f avg", vid["width"], vid["height"], vid["pix_fmt"], vid["codec"], decfnc, vid["time"], vid["frame"], vid["curfps"], vid["avgfps"])
-
     skip += delay(vid["fps"])
     if (skip > 0) {
       skip--
       skipped++
     } else draw(vid)
-    if ( !(vid["frame"] % 10) )
-      printf("\033[Hsize (%dx%d) %s/%s, %s, frame: %6s, fps: %4.1f cur/%4.1f avg skipped: %d", vid["width"], vid["height"], vid["pix_fmt"], decfnc, vid["time"], vid["frame"], vid["curfps"], vid["avgfps"], skipped)
 
+    if ( !(vid["frame"] % 13) )
+      printf("\033[Hsize (%dx%d) %s, %s/%s \033[97;44m%s\033[0m %5.1f%%, frame: %6s (dropped: %d), fps: %4.1f cur/%4.1f avg", vid["width"], vid["height"], vid["pix_fmt"], vid["time"], vid["duration"], bar(vid["frame"], 6572, 10), vid["frame"]*100/6572, vid["frame"], skipped, vid["curfps"], vid["avgfps"])
   }
 }
 
 END {
+  printf("\033[Hsize (%dx%d) %s, %s/%s \033[97;44m%s\033[0m %5.1f%%, frame: %6s (dropped: %d), fps: %4.1f cur/%4.1f avg", vid["width"], vid["height"], vid["pix_fmt"], vid["time"], vid["duration"], bar(vid["frame"], 6572, 10), vid["frame"]*100/6572, vid["frame"], skipped, vid["curfps"], vid["avgfps"])
+
   # reenable cursor
   cursor("on")
 

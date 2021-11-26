@@ -9,7 +9,7 @@ function delay(target,    skip, onesec, i) {
 
   # init sliding window
   if ( !(0 in window) )
-    for (i=0; i<target; i++)
+    for (i=0; i<(target-1); i++)
       window[i] = 1/target
 
   # too slow, return number of frames to skip
