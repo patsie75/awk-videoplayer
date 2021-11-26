@@ -6,6 +6,15 @@
 @include "src/hsync.gawk"
 @include "src/decfnc.gawk"
 @include "src/config.gawk"
+@include "src/delay.gawk"
+
+function fill(dst, col,   i, size) {
+  size = dst["width"] * dst["height"]
+  col = col ? col : "0;0;0"
+
+  for (i=0; i<size; i++)
+    dst[i] = col
+}
 
 ## initialize video player
 BEGIN {
@@ -24,6 +33,13 @@ BEGIN {
     exit 1
   }
 
+  if (split(meta, a) == 4) {
+    vid["duration"]    = a[1]
+    vid["orgsize"]     = a[2]
+    vid["aspectratio"] = a[3]
+    vid["fps"]         = a[4]
+  }
+
   # set rest of video parameters
   vid["width"]           = width           ? width   : 192
   vid["height"]          = height          ? height  : 108
@@ -38,6 +54,7 @@ BEGIN {
 
   # clear video screen
   clear(vid, "0;0;0")
+  #clear(vid, "0;255;0")
 
   # split offset into array
   n = split(vid["offset"], arr, ",")
@@ -58,20 +75,21 @@ BEGIN {
 
   # start measuring duration
   vid["start"] = vid["then"] = vid["now"] = timex()
+
+  prev = now = timex()
 }
 
 
 ## skip lines for every odd frame
-(vid["frame"] % 2) {
-  # still handle scanlines/hsync, but ignore data
-  hsync(vid)
-  next
-}
+#(vid["frame"] % 2) {
+#  # still handle scanlines/hsync, but ignore data
+#  hsync(vid)
+#  next
+#}
 
 
 ## no threading
 (vid["threads"] == 0) {
-
   # with our RS "hack", RT contains our line data
   len = split(RT, data, "")
 
@@ -96,8 +114,13 @@ BEGIN {
   ## if this is the last line (hsync) then draw the frame
   if (hsync(vid))
   {
-    draw(vid)
-    printf("\033[Hsize (%dx%d) %s/%s, %s, frame: %6s, fps: %4.1f cur/%4.1f avg", vid["width"], vid["height"], vid["pix_fmt"], decfnc, vid["time"], vid["frame"], vid["curfps"], vid["avgfps"])
+    skip += delay(vid["fps"])
+    if (skip > 0) {
+      skip--
+      skipped++
+    } else draw(vid)
+    if ( !(vid["frame"] % 10) )
+      printf("\033[Hsize (%dx%d) %s/%s, %s, frame: %6s, fps: %4.1f cur/%4.1f avg skipped: %d", vid["width"], vid["height"], vid["pix_fmt"], decfnc, vid["time"], vid["frame"], vid["curfps"], vid["avgfps"], skipped)
   }
 }
 
@@ -140,8 +163,17 @@ BEGIN {
     }
 
     # display frame and stats
-    draw(vid)
-    printf("\033[Hsize (%dx%d) %s/%s/%s, %s, frame: %6s, fps: %4.1f cur/%4.1f avg", vid["width"], vid["height"], vid["pix_fmt"], vid["codec"], decfnc, vid["time"], vid["frame"], vid["curfps"], vid["avgfps"])
+#    draw(vid)
+#    printf("\033[Hsize (%dx%d) %s/%s/%s, %s, frame: %6s, fps: %4.1f cur/%4.1f avg", vid["width"], vid["height"], vid["pix_fmt"], vid["codec"], decfnc, vid["time"], vid["frame"], vid["curfps"], vid["avgfps"])
+
+    skip += delay(vid["fps"])
+    if (skip > 0) {
+      skip--
+      skipped++
+    } else draw(vid)
+    if ( !(vid["frame"] % 10) )
+      printf("\033[Hsize (%dx%d) %s/%s, %s, frame: %6s, fps: %4.1f cur/%4.1f avg skipped: %d", vid["width"], vid["height"], vid["pix_fmt"], decfnc, vid["time"], vid["frame"], vid["curfps"], vid["avgfps"], skipped)
+
   }
 }
 
