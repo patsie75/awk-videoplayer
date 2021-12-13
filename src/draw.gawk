@@ -61,7 +61,7 @@ function draw(scr, xpos, ypos, cls,   screen, line, x,y, w,h, fg,bg, fgprev,bgpr
 
   # position of zero means center
   if (xpos == 0) xpos = int((terminal["width"] - w) / 2)+1
-  if (ypos == 0) ypos = int((terminal["height"] - h/2) / 2)+1
+  if (ypos == 0) ypos = int((terminal["height"] - h/2) / 2)+2
 
   # negative position means right aligned
   if (xpos < 0) xpos = (terminal["width"] - w + (xpos+1))

@@ -8,12 +8,14 @@
 @include "src/config.gawk"
 @include "src/delay.gawk"
 
-function fill(dst, col,   i, size) {
-  size = dst["width"] * dst["height"]
-  col = col ? col : "0;0;0"
+## convert seconds to human readable time
+function durationtotime(duration) {
+  return  sprintf("%02dh%02dm%03.1fs", duration / 3600, (duration/60)%60, duration%60)
+}
 
-  for (i=0; i<size; i++)
-    dst[i] = col
+## show a status information bar top-left
+function status(vid) {
+  printf("\033[H%dx%d@%d (%s), %s/%s %5.1f%% \033[97;44m%s\033[0m frame: %6s (dropped: %d), fps: %4.1f cur/%4.1f avg", vid["width"], vid["height"], vid["fps"], vid["pix_fmt"], vid["time"], durationtotime(vid["duration"]), vid["frame"]*100/vid["frames"], bar(vid["frame"], vid["frames"], 10), vid["frame"], vid["skipped"], vid["curfps"], vid["avgfps"])
 }
 
 ## draw progress bar
@@ -27,7 +29,6 @@ function bar(val, max, barsize,    str, len, full, part, i) {
   while (i < full)    { str = str sprintf("%s", bargraph[8]); i++ }
   if (part >= 1/len)  { str = str sprintf("%s", bargraph[int(part*len)]); i++ }
   while (i < barsize) { str = str sprintf("%s", bargraph[0]); i++ }
-  #printf(" [%s %s %s]\n", full, part, barsize)
 
   return str
 }
@@ -35,15 +36,6 @@ function bar(val, max, barsize,    str, len, full, part, i) {
 ## initialize video player
 BEGIN {
   # progress bar graphics
-  #bargraph[0] = 32
-  #bargraph[1] = 9615
-  #bargraph[2] = 9614
-  #bargraph[3] = 9613
-  #bargraph[4] = 9612
-  #bargraph[5] = 9611
-  #bargraph[6] = 9610
-  #bargraph[7] = 9609
-  #bargraph[8] = 9608
   bargraph[0] = " "
   bargraph[1] = "▏"
   bargraph[2] = "▎"
@@ -69,11 +61,17 @@ BEGIN {
     exit 1
   }
 
-  if (split(meta, a) == 4) {
-    vid["duration"]    = a[1]
-    vid["orgsize"]     = a[2]
-    vid["aspectratio"] = a[3]
-    vid["fps"]         = a[4]
+  if (split(meta, a) == 7) {
+    vid["orgwidth"]      = int(a[1])
+    vid["orgheight"]     = int(a[2])
+    vid["aspectwidth"]   = int(a[3])
+    vid["aspectheight"]  = int(a[4])
+    vid["frames"]        = int(a[5])
+    vid["duration"]      = a[6]
+    vid["fps"]           = int(a[7] + 0.5)
+  } else {
+    printf("Not enough arguments (7) for meta: \"%s\"\n", meta)
+    exit 0
   }
 
   # set rest of video parameters
@@ -90,7 +88,6 @@ BEGIN {
 
   # clear video screen
   clear(vid, "0;0;0")
-  #clear(vid, "0;255;0")
 
   # split offset into array
   n = split(vid["offset"], arr, ",")
@@ -116,14 +113,6 @@ BEGIN {
 }
 
 
-## skip lines for every odd frame
-#(vid["frame"] % 2) {
-#  # still handle scanlines/hsync, but ignore data
-#  hsync(vid)
-#  next
-#}
-
-
 ## no threading
 (vid["threads"] == 0) {
   # with our RS "hack", RT contains our line data
@@ -147,17 +136,15 @@ BEGIN {
     byte += vid["byte_inc"]
   }
 
-  ## if this is the last line (hsync) then draw the frame
-  if (hsync(vid))
-  {
-    skip += delay(vid["fps"])
-    if (skip > 0) {
+  # if this is the last line (hsync) then draw the frame
+  if (hsync(vid)) {
+    if ((skip += delay(vid["fps"])) > 0) {
       skip--
-      skipped++
+      vid["skipped"]++
     } else draw(vid)
 
     if ( !(vid["frame"] % 13) )
-      printf("\033[Hsize (%dx%d) %s, %s/%s \033[97;44m%s\033[0m %5.1f%%, frame: %6s (dropped: %d), fps: %4.1f cur/%4.1f avg", vid["width"], vid["height"], vid["pix_fmt"], vid["time"], vid["duration"], bar(vid["frame"], 6572, 10), vid["frame"]*100/6572, vid["frame"], skipped, vid["curfps"], vid["avgfps"])
+      status(vid)
   }
 }
 
@@ -199,20 +186,18 @@ BEGIN {
       RS = ".{" vid["width"] * vid["bytes_per_pix"] "}"
     }
 
-    # display frame and stats
-    skip += delay(vid["fps"])
-    if (skip > 0) {
+    if ((skip += delay(vid["fps"])) > 0) {
       skip--
-      skipped++
+      vid["skipped"]++
     } else draw(vid)
 
     if ( !(vid["frame"] % 13) )
-      printf("\033[Hsize (%dx%d) %s, %s/%s \033[97;44m%s\033[0m %5.1f%%, frame: %6s (dropped: %d), fps: %4.1f cur/%4.1f avg", vid["width"], vid["height"], vid["pix_fmt"], vid["time"], vid["duration"], bar(vid["frame"], 6572, 10), vid["frame"]*100/6572, vid["frame"], skipped, vid["curfps"], vid["avgfps"])
+      status(vid)
   }
 }
 
 END {
-  printf("\033[Hsize (%dx%d) %s, %s/%s \033[97;44m%s\033[0m %5.1f%%, frame: %6s (dropped: %d), fps: %4.1f cur/%4.1f avg", vid["width"], vid["height"], vid["pix_fmt"], vid["time"], vid["duration"], bar(vid["frame"], 6572, 10), vid["frame"]*100/6572, vid["frame"], skipped, vid["curfps"], vid["avgfps"])
+  status(vid)
 
   # reenable cursor
   cursor("on")
