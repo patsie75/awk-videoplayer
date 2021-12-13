@@ -1,9 +1,9 @@
 #!/usr/bin/gawk -f
 
-function timex() {
-  getline < "/proc/uptime"
+function timex(    i) {
+  getline i < "/proc/uptime"
   close("/proc/uptime")
-  return($1)
+  return i
 }
 
 BEGIN {
@@ -66,6 +66,8 @@ function draw(scr, xpos, ypos, cls,   screen, line, x,y, w,h, fg,bg, fgprev,bgpr
   # negative position means right aligned
   if (xpos < 0) xpos = (terminal["width"] - w + (xpos+1))
   if (ypos < 0) ypos = (terminal["height"] - h/2 + (ypos+1))
+
+  fgprev = bgprev = -1
 
   screen = cls ? "\033[2J" : ""
   for (y=0; y<h; y+=2) {

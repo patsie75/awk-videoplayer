@@ -6,9 +6,46 @@
 @include "src/hsync.gawk"
 @include "src/decfnc.gawk"
 @include "src/config.gawk"
+@include "src/delay.gawk"
+
+## convert seconds to human readable time
+function durationtotime(duration) {
+  return  sprintf("%02dh%02dm%03.1fs", duration / 3600, (duration/60)%60, duration%60)
+}
+
+## show a status information bar top-left
+function status(vid) {
+  printf("\033[H%dx%d@%d (%s), %s/%s %5.1f%% \033[97;44m%s\033[0m frame: %6s (dropped: %d), fps: %4.1f cur/%4.1f avg", vid["width"], vid["height"], vid["fps"], vid["pix_fmt"], vid["time"], durationtotime(vid["duration"]), vid["frame"]*100/vid["frames"], bar(vid["frame"], vid["frames"], 10), vid["frame"], vid["skipped"], vid["curfps"], vid["avgfps"])
+}
+
+## draw progress bar
+function bar(val, max, barsize,    str, len, full, part, i) {
+  str = ""
+  len = length(bargraph) - 1
+
+  full = int(val*barsize/max)
+  part = (val*barsize/max) % 1
+
+  while (i < full)    { str = str sprintf("%s", bargraph[8]); i++ }
+  if (part >= 1/len)  { str = str sprintf("%s", bargraph[int(part*len)]); i++ }
+  while (i < barsize) { str = str sprintf("%s", bargraph[0]); i++ }
+
+  return str
+}
 
 ## initialize video player
 BEGIN {
+  # progress bar graphics
+  bargraph[0] = " "
+  bargraph[1] = "▏"
+  bargraph[2] = "▎"
+  bargraph[3] = "▍"
+  bargraph[4] = "▌"
+  bargraph[5] = "▋"
+  bargraph[6] = "▊"
+  bargraph[7] = "▉"
+  bargraph[8] = "█"
+
   # load configuration
   load_cfg(cfg, "awk-videoplayer.cfg")
 
@@ -22,6 +59,19 @@ BEGIN {
     for (fmt in cfg) printf(" \"%s\"", fmt)
     printf("\n\n")
     exit 1
+  }
+
+  if (split(meta, a) == 7) {
+    vid["orgwidth"]      = int(a[1])
+    vid["orgheight"]     = int(a[2])
+    vid["aspectwidth"]   = int(a[3])
+    vid["aspectheight"]  = int(a[4])
+    vid["frames"]        = int(a[5])
+    vid["duration"]      = a[6]
+    vid["fps"]           = int(a[7] + 0.5)
+  } else {
+    printf("Not enough arguments (7) for meta: \"%s\"\n", meta)
+    exit 0
   }
 
   # set rest of video parameters
@@ -58,20 +108,13 @@ BEGIN {
 
   # start measuring duration
   vid["start"] = vid["then"] = vid["now"] = timex()
-}
 
-
-## skip lines for every odd frame
-(vid["frame"] % 2) {
-  # still handle scanlines/hsync, but ignore data
-  hsync(vid)
-  next
+  prev = now = timex()
 }
 
 
 ## no threading
 (vid["threads"] == 0) {
-
   # with our RS "hack", RT contains our line data
   len = split(RT, data, "")
 
@@ -93,11 +136,15 @@ BEGIN {
     byte += vid["byte_inc"]
   }
 
-  ## if this is the last line (hsync) then draw the frame
-  if (hsync(vid))
-  {
-    draw(vid)
-    printf("\033[Hsize (%dx%d) %s/%s, %s, frame: %6s, fps: %4.1f cur/%4.1f avg", vid["width"], vid["height"], vid["pix_fmt"], decfnc, vid["time"], vid["frame"], vid["curfps"], vid["avgfps"])
+  # if this is the last line (hsync) then draw the frame
+  if (hsync(vid)) {
+    if ((skip += delay(vid["fps"])) > 0) {
+      skip--
+      vid["skipped"]++
+    } else draw(vid)
+
+    if ( !(vid["frame"] % 13) )
+      status(vid)
   }
 }
 
@@ -139,13 +186,19 @@ BEGIN {
       RS = ".{" vid["width"] * vid["bytes_per_pix"] "}"
     }
 
-    # display frame and stats
-    draw(vid)
-    printf("\033[Hsize (%dx%d) %s/%s/%s, %s, frame: %6s, fps: %4.1f cur/%4.1f avg", vid["width"], vid["height"], vid["pix_fmt"], vid["codec"], decfnc, vid["time"], vid["frame"], vid["curfps"], vid["avgfps"])
+    if ((skip += delay(vid["fps"])) > 0) {
+      skip--
+      vid["skipped"]++
+    } else draw(vid)
+
+    if ( !(vid["frame"] % 13) )
+      status(vid)
   }
 }
 
 END {
+  status(vid)
+
   # reenable cursor
   cursor("on")
 

@@ -2,31 +2,43 @@
 
 clear
 
-## set width and height
-#w="$(tput cols)"
-#h="$(( $(tput lines) * 2 ))"
+## maximum width and height allowed
+## default set to size of the terminal
+## should be tuned to a certain framerate
+maxwidth=$(tput cols)
+maxheight=$(( $(tput lines) * 2))
 
-## set fixed size
-size=8
-
-## tv aspect ratio 16:9
-#w=$(( 16 * size ))
-#h=$((  9 * size ))
-## movie aspect ratio 21:9
-w=$(( 21 * size ))
-h=$((  9 * size ))
-
-## options "rgb8" (8-bit) "rgb565" (16 bit) "rgb24" (24 bit)
+## see "awk-videoplayer.cfg" for available pixel formats
 pix_fmt="${2:-rgb24}"
 
 ## number of decoding threads (default 2)
 threads="${3:-2}"
 
-## ffmpeg options
-ffopts=( -f alsa default -vf "scale=w=${w:-160}:h=${h:-90}" -vcodec rawvideo -f rawvideo -pix_fmt "$pix_fmt" )
+## get meta information from video (size, aspect ratio, frames, duration, fps)
+meta=$( ffmpeg -i "$1" -vcodec copy -an -f null /dev/null 2>&1 | awk '
+! (1 in duration) && match($0, /^  Duration: ([0-9]+):([0-9]+):([0-9]+\.[0-9]+),/, duration) { }
+! (1 in info) && match($0, /Stream #[0-9]:[0-9].*: Video: .* ([0-9]+)x([0-9]+) .* DAR ([0-9]+):([0-9]+).* ([0-9]+(\.[0-9]+)?) fps/, info) { }
+! (1 in frames) && match($0, /frame= *([0-9]+)/, frames) { }
+END { printf("%d %d %d %d %d %.2f %.2f\n", info[1], info[2], info[3], info[4], frames[1], duration[1]*3600 + duration[2]*60 + duration[3], info[5]) }
+' )
 
-## awk options, needs `-b` or `LC_ALL=C` to parse byte-characters and not multi-byte characters
-awkopts=( -b -v width="${w:-160}" -v height="${h:-90}" -v pix_fmt="${pix_fmt:-rgb24}" -v threads=${threads:-2} )
+## find proper/maximum size of our video
+aspectwidth=$( awk '{ print $3 }' <<<"$meta" )
+aspectheight=$( awk '{ print $4 }' <<<"$meta" )
+for size in {2..100..2}; do
+  [[ $(( ($size+2) * $aspectwidth )) -ge $maxwidth ]] && break
+  [[ $(( ($size+2) * $aspectheight )) -ge $((maxheight - 2)) ]] && break
+done
 
-## start ffmpeg conversion and start displaying video
+## scale to correct width x height
+w=$(( aspectwidth * size ))
+h=$(( aspectheight * size ))
+
+## ffmpeg options, decode to raw, uncompressed byte-data video in certain pixelformat
+ffopts=( -f alsa default -vf "scale=w=$w:h=$h" -vcodec rawvideo -f rawvideo -pix_fmt "$pix_fmt" )
+
+## gawk options, needs `-b` or `LC_ALL=C` to parse byte-characters and not multi-byte characters
+awkopts=( -b -v width="$w" -v height="$h" -v pix_fmt="$pix_fmt" -v threads="$threads" -v meta="$meta" )
+
+## start ffmpeg conversion and display video
 ffmpeg -i "$1" "${ffopts[@]}" - 2>/dev/null | gawk "${awkopts[@]}" -f src/awk-videoplayer.gawk
