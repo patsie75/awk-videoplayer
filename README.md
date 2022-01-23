@@ -27,7 +27,8 @@ If multithreading is not working properly for you, set the `<nr of threads>` to 
 
 This script is currently in a testing phase. Don't expect too much from it. If this breaks anything, you'll get to keep all the pieces.
 
-Example video can be seen here: https://youtu.be/QVQkG5bBcOo
+Example video can be seen here: https://youtu.be/QVQkG5bBcOo  
+And Bad Apple! playing at a buttery smooth 30fps and audio in-sync: https://youtu.be/I8AwZDdk8oQ
 
 Example screenshots in 8, 16 and 24 bits:<br>
 ![8 bits](/screenshots/rgb8.png)<br>
