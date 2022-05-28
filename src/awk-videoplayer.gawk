@@ -7,6 +7,7 @@
 @include "src/decfnc.gawk"
 @include "src/config.gawk"
 @include "src/delay.gawk"
+@include "src/glib2.awk"
 
 ## convert seconds to human readable time
 function durationtotime(duration) {
@@ -107,9 +108,11 @@ BEGIN {
   cursor("off")
 
   # start measuring duration
-  vid["start"] = vid["then"] = vid["now"] = timex()
+  #vid["start"] = vid["then"] = vid["now"] = timex()
+  vid["start"] = vid["then"] = vid["now"] = gettimeofday()
 
-  prev = now = timex()
+  #prev = now = timex()
+  prev = now = gettimeofday()
 }
 
 
@@ -141,7 +144,8 @@ BEGIN {
     if ((skip += delay(vid["fps"])) > 0) {
       skip--
       vid["skipped"]++
-    } else draw(vid)
+    #} else draw(vid)
+    } else drawhi(vid)
 
     if ( !(vid["frame"] % 13) )
       status(vid)
@@ -178,7 +182,8 @@ BEGIN {
           thread[threadnr] |& getline line
           split(line, data)
           for (x=0; x<vid["width"]; x++)
-            vid[linepos+x] = data[x+1]
+            #vid[linepos+x] = data[x+1]
+            vid[x,linenr] = data[x+1]
         }
       }
 
@@ -189,7 +194,10 @@ BEGIN {
     if ((skip += delay(vid["fps"])) > 0) {
       skip--
       vid["skipped"]++
-    } else draw(vid)
+    } else {
+      if (xres == 2) drawhi(vid)
+      else draw2(vid)
+    }
 
     if ( !(vid["frame"] % 13) )
       status(vid)
@@ -208,5 +216,25 @@ END {
 
   # reset colors and print newline
   printf("\033[0m\n")
+
+  same["total"] = same["four"] + same["three"] + same["two"] + same["twotwo"] + same["rest"]
+same["total"]=0
+  if (same["total"]) {
+    printf("four : %9d (%5.1f%%)\n", same["four"] , same["four"]  * 100 / same["total"])
+    printf("three: %9d (%5.1f%%)\n", same["three"], same["three"] * 100 / same["total"])
+    printf("two  : %9d (%5.1f%%)\n", same["two"]  , same["two"]   * 100 / same["total"])
+    printf("two2 : %9d (%5.1f%%)\n", same["twotwo"], same["twotwo"] * 100 / same["total"])
+    printf("rest : %9d (%5.1f%%)\n", same["rest"] , same["rest"]  * 100 / same["total"])
+
+    found = 0
+    for (i=0; i<=7; i++) {
+      found += time[i]
+      printf("time[%d] : %9.2f (%5.1f%%)\n", i, time[i], time[i] * 100 / time["total"])
+    }
+
+    printf("lost : %9.2f (%5.1f%%)\n", time["total"]-found, (time["total"] - found) * 100 / time["total"])
+    printf("line : %9.2f (%5.1f%%)\n", time["line"], time["line"] * 100 / time["total"])
+    printf("total: %9.2f (%5.1f%%)\n", time["total"], time["total"] * 100 / time["total"])
+  }
 }
 

@@ -99,3 +99,46 @@ function draw(scr, xpos, ypos, cls,   screen, line, x,y, w,h, fg,bg, fgprev,bgpr
   printf("%s\033[0m", screen)
 }
 
+# draw graphic buffer to terminal
+function draw2(src, xpos, ypos, cls,   screen, line, x,y, w,h, fg,bg, fgprev,bgprev, y0_mul_w, y1_mul_w) {
+  w = src["width"]
+  h = src["height"]
+
+  fgprev = bgprev = -1
+
+  # position of zero means center
+  if (xpos == 0) xpos = int((terminal["width"] - w) / 2)+1
+  if (ypos == 0) ypos = int((terminal["height"] - h/2) / 2)+2
+
+  # negative position means right aligned
+  if (xpos < 0) xpos = (terminal["width"] - w + (xpos+1))
+  if (ypos < 0) ypos = (terminal["height"] - h/2 + (ypos+1))
+
+  fgprev = bgprev = -1
+
+  screen = cls ? "\033[2J" : ""
+  for (y=0; y<h; y+=2) {
+    line = sprintf("\033[%0d;%0dH", ypos+(y/2), xpos)
+
+    for (x=0; x<w; x++) {
+      fg = src[x,y+0]
+      bg = src[x,y+1]
+
+      if (fg != fgprev) {
+        if (bg != bgprev) line = line "\033[38;2;" fg ";48;2;" bg "m▀"
+        else line = line "\033[38;2;" fg "m▀"
+      } else {
+        if (bg != bgprev) line = line "\033[48;2;" bg "m▀"
+        else line = line "▀"
+      }
+
+      fgprev = fg
+      bgprev = bg
+    }
+    screen = screen line
+  }
+
+  # draw screen to terminal and reset color
+  printf("%s\033[0m", screen)
+}
+

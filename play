@@ -2,10 +2,23 @@
 
 clear
 
+if [[ "$1" == "--hi" ]]; then
+  xres=2
+  mode="high"
+  shift
+elif [[ "$1" == "--mixed" ]]; then
+  xres=2
+  mode="mixed"
+  shift
+else
+  xres=1
+  mode="low"
+fi
+
 ## maximum width and height allowed
 ## default set to size of the terminal
 ## should be tuned to a certain framerate
-maxwidth=$(tput cols)
+maxwidth=$(( $(tput cols) * 2 ))
 maxheight=$(( $(tput lines) * 2))
 
 ## see "awk-videoplayer.cfg" for available pixel formats
@@ -23,8 +36,8 @@ END { printf("%d %d %d %d %d %.2f %.2f\n", info[1], info[2], info[3], info[4], f
 ' )
 
 ## find proper/maximum size of our video
-aspectwidth=$( awk '{ print $3 }' <<<"$meta" )
-aspectheight=$( awk '{ print $4 }' <<<"$meta" )
+aspectwidth=$( awk -v xres="$xres" '{ print int($3*xres) }' <<<"$meta" )
+aspectheight=$( awk '{ print int($4) }' <<<"$meta" )
 for size in {2..100..2}; do
   [[ $(( ($size+2) * $aspectwidth )) -ge $maxwidth ]] && break
   [[ $(( ($size+2) * $aspectheight )) -ge $((maxheight - 2)) ]] && break
@@ -38,7 +51,12 @@ h=$(( aspectheight * size ))
 ffopts=( -f alsa default -vf "scale=w=$w:h=$h" -vcodec rawvideo -f rawvideo -pix_fmt "$pix_fmt" )
 
 ## gawk options, needs `-b` or `LC_ALL=C` to parse byte-characters and not multi-byte characters
-awkopts=( -b -v width="$w" -v height="$h" -v pix_fmt="$pix_fmt" -v threads="$threads" -v meta="$meta" )
+awkopts=( -b -v width="$w" -v height="$h" -v pix_fmt="$pix_fmt" -v threads="$threads" -v meta="$meta" -v xres="$xres" -v mode="$mode" )
+#awkopts=( -pplay.prof -b -v width="$w" -v height="$h" -v pix_fmt="$pix_fmt" -v threads="$threads" -v meta="$meta" )
 
 ## start ffmpeg conversion and display video
-ffmpeg -i "$1" "${ffopts[@]}" - 2>/dev/null | gawk "${awkopts[@]}" -f src/awk-videoplayer.gawk
+#ffmpeg -i "$1" "${ffopts[@]}" - 2>/dev/null | gawk "${awkopts[@]}" -f src/awk-videoplayer.gawk
+#ffmpeg -ss 65 -t 10 -i "$1" "${ffopts[@]}" - 2>/dev/null | gawk "${awkopts[@]}" -f src/awk-videoplayer.gawk
+#ffmpeg -ss 125 -t 1 -i "$1" "${ffopts[@]}" - 2>/dev/null | gawk "${awkopts[@]}" -f src/awk-videoplayer.gawk
+#ffmpeg -ss 546 -i "$1" "${ffopts[@]}" - 2>/dev/null | gawk "${awkopts[@]}" -f src/awk-videoplayer.gawk
+ffmpeg -ss 110 -t 30 -i "$1" "${ffopts[@]}" - 2>/dev/null | gawk "${awkopts[@]}" -f src/awk-videoplayer.gawk

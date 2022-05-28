@@ -12,7 +12,8 @@ function hsync(vid)
 
     # increase framecount and update timer
     vid["framecnt"]++
-    vid["now"] = timex()
+    #vid["now"] = timex()
+    vid["now"] = gettimeofday()
     vid["time"] = sprintf("%02dh%02dm%04.1fs", (vid["now"]-vid["start"])/3600, ((vid["now"]-vid["start"])/60)%60, (vid["now"]-vid["start"])%60 )
 
     # update fps every 0.5 seconds
