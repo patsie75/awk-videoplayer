@@ -41,92 +41,36 @@ time[0] += (t=gettimeofday()) - s; s=t
       # four same colors
       if ((pix[1] == pix[2]) && (pix[2] == pix[3]) && (pix[3] == pix[4])) {
         line = line sprintf("\033[48;2;%sm%s", pix[1], hires["0000"])
-#        line = line sprintf("\033[0m%s", hires["1111"])
+#         line = line sprintf("\033[0;31m%s", hires["1111"])
         same["four"]++
         continue
       }
 
-      # three+one same colors
-      if ((pix[1] == pix[2]) && (pix[2] == pix[3])) {
-        line = line sprintf("\033[38;2;%s;48;2;%sm%s", pix[1], pix[4], hires["1110"])
-#        line = line sprintf("\033[0;32m%s", hires["1110"])
-        same["three"]++
-        continue
-      }
-      if ((pix[1] == pix[2]) && (pix[2] == pix[4])) {
-        line = line sprintf("\033[38;2;%s;48;2;%sm%s", pix[1], pix[3], hires["1101"])
-#        line = line sprintf("\033[0;32m%s", hires["1101"])
-        same["three"]++
-        continue
-      }
-      if ((pix[1] == pix[3]) && (pix[3] == pix[4])) {
-        line = line sprintf("\033[38;2;%s;48;2;%sm%s", pix[1], pix[2], hires["1011"])
-#        line = line sprintf("\033[0;32m%s", hires["1011"])
-        same["three"]++
-        continue
-      }
-      if ((pix[2] == pix[3]) && (pix[3] == pix[4])) {
-        line = line sprintf("\033[38;2;%s;48;2;%sm%s", pix[2], pix[1], hires["0111"])
-#        line = line sprintf("\033[0;32m%s", hires["0111"])
+      # boolean value representing which pixels are equal
+      pixbool = (pix[1]==pix[2]) (pix[1]==pix[3]) (pix[1]==pix[4]) (pix[2]==pix[3]) (pix[2]==pix[4]) (pix[3]==pix[4])
+
+      # check if three+one same pixels
+      if (pixbool in pixthree) {
+        line = line sprintf(pixthree[pixbool], pix[1], pix[2], pix[3], pix[4])
+#        line = line sprintf("\033[0;33m%s", hires["1111"])
         same["three"]++
         continue
       }
 
-      # two same colors
-      if ((pix[1] == pix[2]) && (pix[3] == pix[4])) {
-        line = line sprintf("\033[38;2;%s;48;2;%sm%s", pix[1], pix[3], hires["1100"])
-#        line = line sprintf("\033[0;31m%s", hires["1100"])
-        same["two"]++
-        continue
-      }
-      if (pix[1] == pix[2]) {
-        line = line sprintf("\033[38;2;%s;48;2;%sm%s", pix[1], rgbmix2(pix[3], pix[4]), hires["1100"])
-#        line = line sprintf("\033[0;31m%s", hires["1100"])
-        same["twotwo"]++
-        continue
-      }
-      if (pix[3] == pix[4]) {
-        line = line sprintf("\033[38;2;%s;48;2;%sm%s", pix[3], rgbmix2(pix[1], pix[2]), hires["0011"])
-#        line = line sprintf("\033[0;31m%s", hires["0011"])
+      # check if two+two same pixels
+      if (pixbool in pixtwotwo) {
+        line = line sprintf(pixtwotwo[pixbool], pix[1], pix[2], pix[3], pix[4])
+#        line = line sprintf("\033[0;34m%s", hires["1111"])
         same["twotwo"]++
         continue
       }
 
-      if ((pix[1] == pix[3]) && (pix[2] == pix[4])) {
-        line = line sprintf("\033[38;2;%s;48;2;%sm%s", pix[1], pix[2], hires["1010"])
-#        line = line sprintf("\033[0;33m%s", hires["1010"])
-        same["two"]++
-        continue
-      }
-      if (pix[1] == pix[3]) {
-        line = line sprintf("\033[38;2;%s;48;2;%sm%s", pix[1], rgbmix2(pix[2], pix[4]), hires["1010"])
-#        line = line sprintf("\033[0;31m%s", hires["1010"])
-        same["twotwo"]++
-        continue
-      }
-      if (pix[2] == pix[4]) {
-        line = line sprintf("\033[38;2;%s;48;2;%sm%s", pix[2], rgbmix2(pix[1], pix[3]), hires["0101"])
-#        line = line sprintf("\033[0;31m%s", hires["0101"])
-        same["twotwo"]++
-        continue
-      }
-
-      if ((pix[1] == pix[4]) && (pix[2] == pix[3])) {
-        line = line sprintf("\033[38;2;%s;48;2;%sm%s", pix[1], pix[2], hires["1001"])
-#        line = line sprintf("\033[0;33m%s", hires["1001"])
-        same["two"]++
-        continue
-      }
-      if (pix[1] == pix[4]) {
-        line = line sprintf("\033[38;2;%s;48;2;%sm%s", pix[1], rgbmix2(pix[2], pix[3]), hires["1001"])
-#        line = line sprintf("\033[0;31m%s", hires["1001"])
-        same["twotwo"]++
-        continue
-      }
-      if (pix[2] == pix[3]) {
-        line = line sprintf("\033[38;2;%s;48;2;%sm%s", pix[2], rgbmix2(pix[1], pix[4]), hires["0110"])
-#        line = line sprintf("\033[0;31m%s", hires["0110"])
-        same["twotwo"]++
+      # check if two+one+one pixels
+      if (pixbool in pixtwoone) {
+        tmp = f_mixtwoone(mixtwoone[pixbool], pix[1], pix[2], pix[3], pix[4])
+        line = line sprintf(pixtwoone[pixbool], pix[1], pix[2], pix[3], pix[4], tmp)
+#        line = line sprintf("\033[0;35m%s", hires["1111"])
+        same["twoone"]++
         continue
       }
 
@@ -135,8 +79,6 @@ time[1] += (t=gettimeofday()) - s; s=t
 same["rest"]++
 #     line = line sprintf("\033[0;34m%s", hires["1111"])
 #     line = line sprintf("\033[38;2;%s;48;2;%sm%s", pix[1], pix[3], hires["1100"])
-#     line = line sprintf("\033[38;2;%s;48;2;%sm%s", rgbmix2(pix[1], pix[3]), rgbmix2(pix[2], pix[4]), hires["1010"])
-#     line = line sprintf("\033[38;2;%s;48;2;%sm%s", rgbmix2(pix[1], pix[2]), rgbmix2(pix[3], pix[4]), hires["1100"])
 #     continue
 
       # convert RGB to brightness value
@@ -227,6 +169,11 @@ time["line"] += gettimeofday() - sss
 time["total"] += gettimeofday() - ss
 }
 
+function f_mixtwoone(str, p1, p2, p3, p4,    rgb) {
+  split(sprintf(str, p1,p2,p3,p4), rgb, ";")
+  return sprintf("%d;%d;%d", (rgb[1]+rgb[4])/2, (rgb[2]+rgb[5])/2, (rgb[3]+rgb[6])/2)
+}
+
 # mix 2 colors
 function rgbmix2(p1, p2,     rgb) {
   split(p1";"p2, rgb, ";")
@@ -263,4 +210,34 @@ BEGIN {
   hires["1101"] = "▜"
   hires["1110"] = "▛"
   hires["1111"] = "█"
+
+  ##
+  ## Hashmaps to quickly draw the correct pixel character and colors
+  ##
+
+  # [1,2] [1,3] [1,4] [2,3] [2,4], [3,4]
+  pixthree["000111"] = "\033[38;2;%2$s;48;2;%1$sm" hires["0111"]
+  pixthree["011001"] = "\033[38;2;%1$s;48;2;%2$sm" hires["1011"]
+  pixthree["101010"] = "\033[38;2;%1$s;48;2;%3$sm" hires["1101"]
+  pixthree["110100"] = "\033[38;2;%1$s;48;2;%4$sm" hires["1110"]
+
+  # [1,2] [1,3] [1,4] [2,3] [2,4] [3,4]
+  pixtwotwo["001100"] = "\033[38;2;%1$s;48;2;%2$sm" hires["1001"]
+  pixtwotwo["010010"] = "\033[38;2;%1$s;48;2;%2$sm" hires["1010"]
+  pixtwotwo["100001"] = "\033[38;2;%1$s;48;2;%3$sm" hires["1100"]
+
+  # [1,2] [1,3] [1,4] [2,3] [2,4] [3,4]
+  pixtwoone["000001"] = "\033[38;2;%3$s;48;2;%5$sm" hires["0011"]
+  pixtwoone["000010"] = "\033[38;2;%2$s;48;2;%5$sm" hires["0101"]
+  pixtwoone["000100"] = "\033[38;2;%2$s;48;2;%5$sm" hires["0110"]
+  pixtwoone["001000"] = "\033[38;2;%1$s;48;2;%5$sm" hires["1001"]
+  pixtwoone["010000"] = "\033[38;2;%1$s;48;2;%5$sm" hires["1010"]
+  pixtwoone["100000"] = "\033[38;2;%1$s;48;2;%5$sm" hires["1100"]
+
+  mixtwoone["000001"] = "%1$s;%2$s"
+  mixtwoone["000010"] = "%1$s;%3$s"
+  mixtwoone["000100"] = "%1$s;%4$s"
+  mixtwoone["001000"] = "%2$s;%3$s"
+  mixtwoone["010000"] = "%2$s;%4$s"
+  mixtwoone["100000"] = "%3$s;%4$s"
 }

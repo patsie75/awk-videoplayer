@@ -217,14 +217,14 @@ END {
   # reset colors and print newline
   printf("\033[0m\n")
 
-  same["total"] = same["four"] + same["three"] + same["two"] + same["twotwo"] + same["rest"]
-same["total"]=0
+  same["total"] = same["four"] + same["three"] + same["twotwo"] + same["twoone"] + same["rest"]
+same["total"] = 0
   if (same["total"]) {
-    printf("four : %9d (%5.1f%%)\n", same["four"] , same["four"]  * 100 / same["total"])
-    printf("three: %9d (%5.1f%%)\n", same["three"], same["three"] * 100 / same["total"])
-    printf("two  : %9d (%5.1f%%)\n", same["two"]  , same["two"]   * 100 / same["total"])
+    printf("four : %9d (%5.1f%%)\n", same["four"]  , same["four"]   * 100 / same["total"])
+    printf("three: %9d (%5.1f%%)\n", same["three"] , same["three"]  * 100 / same["total"])
     printf("two2 : %9d (%5.1f%%)\n", same["twotwo"], same["twotwo"] * 100 / same["total"])
-    printf("rest : %9d (%5.1f%%)\n", same["rest"] , same["rest"]  * 100 / same["total"])
+    printf("two1 : %9d (%5.1f%%)\n", same["twoone"], same["twoone"] * 100 / same["total"])
+    printf("rest : %9d (%5.1f%%)\n", same["rest"]  , same["rest"]   * 100 / same["total"])
 
     found = 0
     for (i=0; i<=7; i++) {
